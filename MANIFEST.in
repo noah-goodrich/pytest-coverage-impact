@@ -1,0 +1,33 @@
+# MANIFEST.in - Control which files are included in PyPI source distribution
+#
+# Only explicitly listed files are included in the package.
+# Internal development files (not listed) stay in git but won't be in PyPI package.
+
+# Required package files
+include README.md
+include LICENSE
+include pyproject.toml
+include pytest.ini.example
+
+# Public documentation (user-facing)
+include CHANGELOG.md
+include USAGE.md
+include CONFIGURATION.md
+include STATUS.md
+include TRAINING_COMMANDS.md
+include CONFIDENCE_AND_PRIORITY.md
+include FORMULA_EXPLANATION.md
+
+# Python source code
+recursive-include pytest_coverage_impact *.py
+
+# ML model files (required for default model)
+recursive-include pytest_coverage_impact/ml/models *.pkl
+
+# Development directories excluded automatically (not needed in package):
+# - tests/
+# - training_data/
+# - .pytest_cache/
+# - __pycache__/
+# - *.egg-info/
+# - Internal docs (COVERAGE_ANALYSIS.md, DOCUMENTATION_*.md, *RELEASE*.md, *CHECKLIST*.md, etc.)

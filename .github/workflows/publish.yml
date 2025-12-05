@@ -1,0 +1,99 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on tags like v0.1.0, v1.0.0, etc.
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # For trusted publishing (recommended)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for version extraction
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Extract version from tag
+        id: tag_version
+        run: |
+          # Remove 'v' prefix if present (v0.1.0 -> 0.1.0)
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Verify version matches code
+        run: |
+          TAG_VERSION="${{ steps.tag_version.outputs.version }}"
+          CODE_VERSION=$(python -c "from pytest_coverage_impact import __version__; print(__version__)")
+
+          if [ "$TAG_VERSION" != "$CODE_VERSION" ]; then
+            echo "❌ Version mismatch!"
+            echo "Tag version: $TAG_VERSION"
+            echo "Code version: $CODE_VERSION"
+            echo ""
+            echo "Please update __version__ in pytest_coverage_impact/__init__.py to match the tag."
+            exit 1
+          fi
+
+          echo "✅ Version match: $TAG_VERSION"
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Run tests
+        run: |
+          pip install -e ".[dev]"
+          pytest tests/unit tests/integration -v --tb=short
+
+      - name: Build package
+        run: |
+          python -m build
+
+      - name: Verify package contents
+        run: |
+          echo "Checking package contents..."
+          tar -tzf dist/pytest-coverage-impact-*.tar.gz | grep -E "(LICENSE|\.pkl|README)" | head -5
+
+          # Verify ML model is included
+          if tar -tzf dist/pytest-coverage-impact-*.tar.gz | grep -q "\.pkl"; then
+            echo "✅ ML model file found in package"
+          else
+            echo "❌ ML model file NOT found in package"
+            exit 1
+          fi
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          print-hash: true
+        env:
+          # No credentials needed when using trusted publishing
+          # Just ensure PyPI project has trusted publishing configured
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ steps.tag_version.outputs.version }}
+          draft: false
+          prerelease: ${{ contains(steps.tag_version.outputs.version, 'a') || contains(steps.tag_version.outputs.version, 'b') || contains(steps.tag_version.outputs.version, 'rc') }}
+          body: |
+            Release ${{ steps.tag_version.outputs.version }}
+
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${{ github.ref }}/CHANGELOG.md) for details.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

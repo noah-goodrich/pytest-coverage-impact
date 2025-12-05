@@ -1,0 +1,15 @@
+# Example pytest.ini configuration for pytest-coverage-impact
+
+[pytest]
+# Path to ML complexity model directory or file
+# - Directory: Auto-detects highest version model (recommended)
+# - File: Uses specific model file
+# Can be relative to project root or absolute path
+coverage_impact_model_path = .coverage_impact/models
+
+# Other pytest options
+testpaths = tests
+python_files = test_*.py
+python_classes = Test*
+python_functions = test_*
+
