@@ -11,12 +11,7 @@ include pytest.ini.example
 
 # Public documentation (user-facing)
 include CHANGELOG.md
-include USAGE.md
-include CONFIGURATION.md
-include STATUS.md
-include TRAINING_COMMANDS.md
-include CONFIDENCE_AND_PRIORITY.md
-include FORMULA_EXPLANATION.md
+recursive-include docs *.md
 
 # Python source code
 recursive-include pytest_coverage_impact *.py

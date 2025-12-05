@@ -4,7 +4,7 @@ Automated PyPI publishing via GitHub Actions when tags are pushed.
 
 ## Quick Start
 
-1. Update CHANGELOG.md and version numbers
+1. Update [CHANGELOG.md](../CHANGELOG.md) and version numbers
 2. Commit: `git commit -m "Bump version to 0.1.0"`
 3. Create and push tag: `git tag -a v0.1.0 -m "Release" && git push origin v0.1.0`
 4. GitHub Actions automatically builds, tests, publishes to PyPI, and creates a release
@@ -21,7 +21,7 @@ Automated PyPI publishing via GitHub Actions when tags are pushed.
 
 ### Manual Steps (You Control)
 
-1. Update CHANGELOG.md with new version
+1. Update [CHANGELOG.md](../CHANGELOG.md) with new version
 2. Update version in `__init__.py` and `pyproject.toml`
 3. Commit changes
 4. Create annotated tag: `git tag -a v0.1.0 -m "Release version 0.1.0"`

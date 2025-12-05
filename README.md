@@ -55,7 +55,7 @@ Plugin includes pre-trained model - no training required. To customize:
 pytest --coverage-impact-train
 ```
 
-See [TRAINING_COMMANDS.md](TRAINING_COMMANDS.md) for details.
+See [docs/TRAINING_COMMANDS.md](docs/TRAINING_COMMANDS.md) for details.
 
 ## Requirements
 
@@ -68,12 +68,12 @@ See [TRAINING_COMMANDS.md](TRAINING_COMMANDS.md) for details.
 
 ## Documentation
 
-- **[USAGE.md](USAGE.md)** - Complete usage guide with examples
-- **[CONFIGURATION.md](CONFIGURATION.md)** - Configure plugin settings and model paths
-- **[TRAINING_COMMANDS.md](TRAINING_COMMANDS.md)** - Train custom ML models
-- **[FORMULA_EXPLANATION.md](FORMULA_EXPLANATION.md)** - How scores are calculated
-- **[CONFIDENCE_AND_PRIORITY.md](CONFIDENCE_AND_PRIORITY.md)** - How confidence affects prioritization
-- **[RELEASE_PROCESS.md](RELEASE_PROCESS.md)** - Releasing and publishing to PyPI
+- **[docs/USAGE.md](docs/USAGE.md)** - Complete usage guide with examples
+- **[docs/CONFIGURATION.md](docs/CONFIGURATION.md)** - Configure plugin settings and model paths
+- **[docs/TRAINING_COMMANDS.md](docs/TRAINING_COMMANDS.md)** - Train custom ML models
+- **[docs/FORMULA_EXPLANATION.md](docs/FORMULA_EXPLANATION.md)** - How scores are calculated
+- **[docs/CONFIDENCE_AND_PRIORITY.md](docs/CONFIDENCE_AND_PRIORITY.md)** - How confidence affects prioritization
+- **[docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)** - Releasing and publishing to PyPI
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history
 
 ## Development
