@@ -1,0 +1,63 @@
+# Pre-commit hooks configuration for pytest-coverage-impact
+# Install with: pre-commit install
+# Run manually: pre-commit run --all-files
+#
+# Hook Behavior:
+# - Black checks formatting and FAILS if files need reformatting
+#   User must manually run: black pytest_coverage_impact tests/
+#   Then add reformatted files before committing
+# - Ruff auto-fixes issues, then checks for remaining errors
+# - Pytest runs unit and integration tests (excludes functional/slow tests)
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: ['--unsafe']
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        language_version: python3
+        args: ['--check', '--line-length=120']
+        # --check flag makes black FAIL if files need reformatting
+        # User must manually run: black pytest_coverage_impact tests/
+        # Then add the reformatted files before committing
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+      # Auto-fix issues
+      - id: ruff
+        args: ['--fix']
+
+  # Second ruff check (without --fix) - fails if errors remain after fixing
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff-check
+        entry: bash -c 'ruff check pytest_coverage_impact tests'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+
+  # Run pytest (unit + integration, excludes functional/slow tests)
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: bash -c 'pytest tests/unit tests/integration -q'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+        # Note: Runs from project root (where .pre-commit-config.yaml is located)

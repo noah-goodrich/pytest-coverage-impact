@@ -128,4 +128,3 @@ All notable changes to pytest-coverage-impact will be documented in this file.
 - HTML report generation
 - PyPI publishing
 - Historical trend analysis (v2.0)
-
