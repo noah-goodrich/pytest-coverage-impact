@@ -8,14 +8,13 @@ version = "0.1.1"
 description = "ML-powered test coverage analysis plugin for pytest"
 readme = "README.md"
 requires-python = ">=3.8"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "Coverage Impact Team"}
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -84,6 +83,12 @@ ignore = ["E501"]  # Line length handled by formatter
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
+
+[tool.setuptools]
+packages = ["pytest_coverage_impact"]
+
+[tool.setuptools.package-data]
+pytest_coverage_impact = ["ml/models/*.pkl"]
 
 [tool.mypy]
 python_version = "3.8"

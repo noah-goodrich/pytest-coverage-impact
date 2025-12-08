@@ -60,17 +60,46 @@ jobs:
       - name: Build package
         run: |
           python -m build
+          echo "Build completed. Files in dist/:"
+          ls -lah dist/
 
       - name: Verify package contents
         run: |
           echo "Checking package contents..."
-          tar -tzf dist/pytest-coverage-impact-*.tar.gz | grep -E "(LICENSE|\.pkl|README)" | head -5
+
+          # Find the source distribution file
+          SRC_DIST=$(ls dist/*.tar.gz 2>/dev/null | head -1)
+
+          if [ -z "$SRC_DIST" ]; then
+            echo "❌ No source distribution found in dist/"
+            ls -lah dist/ || echo "dist/ directory does not exist"
+            exit 1
+          fi
+
+          echo "Found package: $SRC_DIST"
+
+          # List key files
+          echo ""
+          echo "Key files in package:"
+          tar -tzf "$SRC_DIST" | grep -E "(LICENSE|\.pkl|README|MANIFEST)" | head -10
 
           # Verify ML model is included
-          if tar -tzf dist/pytest-coverage-impact-*.tar.gz | grep -q "\.pkl"; then
+          if tar -tzf "$SRC_DIST" | grep -q "\.pkl"; then
+            echo ""
             echo "✅ ML model file found in package"
           else
+            echo ""
             echo "❌ ML model file NOT found in package"
+            echo "Contents:"
+            tar -tzf "$SRC_DIST" | head -20
+            exit 1
+          fi
+
+          # Verify LICENSE is included
+          if tar -tzf "$SRC_DIST" | grep -q "LICENSE"; then
+            echo "✅ LICENSE file found in package"
+          else
+            echo "❌ LICENSE file NOT found in package"
             exit 1
           fi
 
