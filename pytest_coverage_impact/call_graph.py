@@ -150,15 +150,13 @@ class CallGraph:
             calls_to_add = []
 
             for call in caller_data["calls"]:
-                new_calls_to_add, new_calls_to_remove = self._resolve_method_call(
-                    call, class_methods)
+                new_calls_to_add, new_calls_to_remove = self._resolve_method_call(call, class_methods)
                 calls_to_add.extend(new_calls_to_add)
                 calls_to_remove.extend(new_calls_to_remove)
 
             # Update calls
             if calls_to_add or calls_to_remove:
-                self._update_calls_for_caller(
-                    caller_name, caller_data, calls_to_add, calls_to_remove)
+                self._update_calls_for_caller(caller_name, caller_data, calls_to_add, calls_to_remove)
 
     def get_impact(self, function_name: str, visited: Optional[Set[str]] = None) -> int:
         """Calculate total impact (direct + indirect callers) for a function
@@ -336,8 +334,7 @@ def build_call_graph(root: Path, package_prefix: Optional[str] = None) -> CallGr
 
                     # Add call relationships
                     for called_func in visitor.calls:
-                        call_graph.add_call(
-                            caller=full_name, callee=called_func)
+                        call_graph.add_call(caller=full_name, callee=called_func)
 
                     self.generic_visit(node)
 

@@ -92,8 +92,7 @@ class TrainingDataCollector:
             Tuple of (test_complexities_list, test_files_used_list)
         """
         test_analyzer = TestAnalyzer()
-        test_matches = test_analyzer.map_function_to_tests(
-            func_file, test_files, self.root)
+        test_matches = test_analyzer.map_function_to_tests(func_file, test_files, self.root)
 
         if not test_matches:
             return [], []
@@ -103,8 +102,7 @@ class TrainingDataCollector:
 
         for test_file in test_matches:
             test_features = test_analyzer.extract_test_complexity(test_file)
-            complexity_label = test_analyzer.calculate_complexity_label(
-                test_features)
+            complexity_label = test_analyzer.calculate_complexity_label(test_features)
             test_complexities.append(complexity_label)
             test_files_used.append(str(test_file.relative_to(self.root)))
 
@@ -129,8 +127,7 @@ class TrainingDataCollector:
         func_file = self.root / file_path
 
         # Find test matches
-        test_complexities, test_files_used = self._extract_test_complexity_for_function(
-            func_file, test_files)
+        test_complexities, test_files_used = self._extract_test_complexity_for_function(func_file, test_files)
 
         if not test_complexities:
             # No test found - skip for now
@@ -148,12 +145,10 @@ class TrainingDataCollector:
         if not tree:
             return None
 
-        features = FeatureExtractor.extract_features(
-            func_node, tree, str(func_file))
+        features = FeatureExtractor.extract_features(func_node, tree, str(func_file))
 
         # Use average complexity if multiple tests
-        avg_complexity = sum(test_complexities) / \
-            len(test_complexities) if test_complexities else 0.0
+        avg_complexity = sum(test_complexities) / len(test_complexities) if test_complexities else 0.0
 
         return {
             "function_signature": func_name,
@@ -185,8 +180,7 @@ class TrainingDataCollector:
         training_data = []
 
         for func_name, func_data in self.call_graph.graph.items():
-            training_example = self._process_function(
-                func_name, func_data, test_files)
+            training_example = self._process_function(func_name, func_data, test_files)
             if training_example:
                 training_data.append(training_example)
 

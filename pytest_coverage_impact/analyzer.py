@@ -65,8 +65,7 @@ class CoverageImpactAnalyzer:
             coverage_file = self.project_root / "coverage.json"
 
         if not coverage_file.exists():
-            raise FileNotFoundError(
-                f"Coverage file not found: {coverage_file}")
+            raise FileNotFoundError(f"Coverage file not found: {coverage_file}")
 
         # Build call graph
         call_graph = build_call_graph(self.source_dir)
@@ -82,12 +81,10 @@ class CoverageImpactAnalyzer:
         impact_scores = calculator.calculate_impact_scores()
 
         # Estimate complexity with ML
-        complexity_scores, confidence_scores = self._estimate_complexities(
-            impact_scores, model_path=model_path)
+        complexity_scores, confidence_scores = self._estimate_complexities(impact_scores, model_path=model_path)
 
         # Prioritize functions
-        prioritized = Prioritizer.prioritize_functions(
-            impact_scores, complexity_scores, confidence_scores)
+        prioritized = Prioritizer.prioritize_functions(impact_scores, complexity_scores, confidence_scores)
 
         return {
             "call_graph": call_graph,
@@ -140,8 +137,7 @@ class CoverageImpactAnalyzer:
                         # Calculate confidence from interval width
                         if lower is not None and upper is not None:
                             interval_width = upper - lower
-                            confidence = max(
-                                0.0, min(1.0, 1.0 - interval_width))
+                            confidence = max(0.0, min(1.0, 1.0 - interval_width))
                             confidence_scores[item["function"]] = confidence
                 except Exception:
                     continue
@@ -171,8 +167,7 @@ class CoverageImpactAnalyzer:
         if project_model_dir.exists() and project_model_dir.is_dir():
             from pytest_coverage_impact.ml.versioning import get_latest_version
 
-            latest = get_latest_version(
-                project_model_dir, "complexity_model_v", ".pkl")
+            latest = get_latest_version(project_model_dir, "complexity_model_v", ".pkl")
             if latest:
                 return latest[1]
 
@@ -208,8 +203,7 @@ class CoverageImpactAnalyzer:
         if not tree:
             return None, None, None
 
-        score, lower, upper = estimator.estimate_complexity(
-            func_node, tree, str(func_file), with_confidence=True)
+        score, lower, upper = estimator.estimate_complexity(func_node, tree, str(func_file), with_confidence=True)
         return score, lower, upper
 
     def get_model_path(self, cli_model_path: Optional[str] = None) -> Optional[Path]:

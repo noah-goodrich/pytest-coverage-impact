@@ -72,8 +72,7 @@ def test_save_training_data_with_version():
         collector = TrainingDataCollector(Path(tmpdir))
 
         training_data = []
-        version = collector.save_training_data(
-            training_data, output_path, version="2.0")
+        version = collector.save_training_data(training_data, output_path, version="2.0")
 
         assert version == "2.0"
 

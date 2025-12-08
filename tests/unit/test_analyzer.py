@@ -22,8 +22,7 @@ def temp_project(tmp_path):
 
     # Create a simple Python module
     module_file = source_dir / "module.py"
-    module_file.write_text(
-        "def hello():\n    return 'world'\n\ndef goodbye():\n    return 'bye'\n")
+    module_file.write_text("def hello():\n    return 'world'\n\ndef goodbye():\n    return 'bye'\n")
 
     # Create coverage.json
     coverage_file = project_root / "coverage.json"
@@ -195,8 +194,7 @@ def test_estimate_complexities_no_model(temp_project):
     impact_scores = results["impact_scores"]
     # Pass a nonexistent model path to ensure no model is used
     nonexistent_path = project_root / "nonexistent_model.pkl"
-    complexity_scores, confidence_scores = analyzer._estimate_complexities(
-        impact_scores, model_path=nonexistent_path)
+    complexity_scores, confidence_scores = analyzer._estimate_complexities(impact_scores, model_path=nonexistent_path)
 
     # Should return empty dicts when no model is available
     assert complexity_scores == {}
@@ -210,8 +208,7 @@ def test_estimate_function_complexity_file_not_found(temp_project):
     analyzer = CoverageImpactAnalyzer(project_root, source_dir)
     mock_estimator = Mock()
 
-    result = analyzer._estimate_function_complexity(
-        mock_estimator, Path("/nonexistent/file.py"), 1, "test::function")
+    result = analyzer._estimate_function_complexity(mock_estimator, Path("/nonexistent/file.py"), 1, "test::function")
 
     assert result == (None, None, None)
 
@@ -225,8 +222,7 @@ def test_estimate_function_complexity_function_not_found(temp_project):
     mock_estimator = Mock()
 
     # Try to find function at line 99 (doesn't exist)
-    result = analyzer._estimate_function_complexity(
-        mock_estimator, module_file, 99, "test::function")
+    result = analyzer._estimate_function_complexity(mock_estimator, module_file, 99, "test::function")
 
     assert result == (None, None, None)
 

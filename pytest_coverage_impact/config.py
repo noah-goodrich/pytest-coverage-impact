@@ -58,8 +58,7 @@ def _get_model_path_from_project_dir(project_root: Path) -> Optional[Path]:
     if project_model_dir.exists() and project_model_dir.is_dir():
         from pytest_coverage_impact.ml.versioning import get_latest_version
 
-        latest = get_latest_version(
-            project_model_dir, "complexity_model_v", ".pkl")
+        latest = get_latest_version(project_model_dir, "complexity_model_v", ".pkl")
         if latest:
             return latest[1]
 

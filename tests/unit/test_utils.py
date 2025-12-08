@@ -46,8 +46,7 @@ def test_resolve_model_path_with_auto_detect_file_not_found(tmp_path):
     project_root = tmp_path / "project"
     project_root.mkdir()
 
-    result = resolve_model_path_with_auto_detect(
-        "nonexistent.pkl", project_root)
+    result = resolve_model_path_with_auto_detect("nonexistent.pkl", project_root)
     assert result is None
 
 
@@ -111,8 +110,7 @@ def test_parse_ast_tree_nonexistent_file(tmp_path):
 def test_find_function_node_by_line_found(tmp_path):
     """Test finding a function node by line number"""
     python_file = tmp_path / "test.py"
-    python_file.write_text(
-        "def first():\n    pass\n\ndef second():\n    pass\n")
+    python_file.write_text("def first():\n    pass\n\ndef second():\n    pass\n")
 
     func_node = find_function_node_by_line(python_file, 1)
     assert func_node is not None
@@ -154,6 +152,5 @@ def test_resolve_model_path_with_auto_detect_custom_prefix_suffix(tmp_path):
     (model_dir / "custom_v1.0.json").write_bytes(b'{"version": "1.0"}')
     (model_dir / "custom_v2.0.json").write_bytes(b'{"version": "2.0"}')
 
-    result = resolve_model_path_with_auto_detect(
-        "models", project_root, prefix="custom_v", suffix=".json")
+    result = resolve_model_path_with_auto_detect("models", project_root, prefix="custom_v", suffix=".json")
     assert result == (model_dir / "custom_v2.0.json").resolve()

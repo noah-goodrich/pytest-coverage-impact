@@ -11,8 +11,7 @@ def pytest_load_initial_conftests(early_config, parser, args):
     # Automatically add --cov-report=json if --coverage-impact is used
     if "--coverage-impact" in args:
         # Check if --cov-report=json is already specified
-        has_cov_report_json = any(
-            "--cov-report=json" in arg or "--cov-report" in arg and "json" in arg for arg in args)
+        has_cov_report_json = any("--cov-report=json" in arg or "--cov-report" in arg and "json" in arg for arg in args)
 
         if not has_cov_report_json:
             # Add --cov-report=json to ensure coverage.json is generated
@@ -21,8 +20,7 @@ def pytest_load_initial_conftests(early_config, parser, args):
 
 def pytest_addoption(parser: pytest.Parser) -> None:
     """Add command-line options for coverage impact plugin"""
-    group = parser.getgroup(
-        "coverage-impact", "Coverage impact analysis with ML complexity estimation")
+    group = parser.getgroup("coverage-impact", "Coverage impact analysis with ML complexity estimation")
 
     group.addoption(
         "--coverage-impact",
@@ -176,8 +174,7 @@ def _handle_collect_training_data(config: pytest.Config, output_path: Path) -> P
         if training_data_dir.name != "training_data" and (training_data_dir / "training_data").exists():
             training_data_dir = training_data_dir / "training_data"
 
-        version, output_path = get_next_version(
-            training_data_dir, "dataset_v", ".json")
+        version, output_path = get_next_version(training_data_dir, "dataset_v", ".json")
         console.print(f"[dim]Auto-incrementing version to {version}[/dim]")
     else:
         # Use the provided path as-is
@@ -201,10 +198,8 @@ def _handle_collect_training_data(config: pytest.Config, output_path: Path) -> P
         match = re.search(r"v(\d+\.\d+)", output_path.name)
         version = match.group(1) if match else "1.0"
 
-        collector.save_training_data(
-            training_data, output_path, version=version)
-        console.print(
-            f"\n[green]✓[/green] Training data saved to {output_path}")
+        collector.save_training_data(training_data, output_path, version=version)
+        console.print(f"\n[green]✓[/green] Training data saved to {output_path}")
         return output_path
     except Exception as e:
         console.print(f"\n[red]✗ Error collecting training data: {e}[/red]")
@@ -232,8 +227,7 @@ def _handle_train_model(config: pytest.Config, training_data_path: Path) -> None
     console.print(f"Training data: {training_data_path}")
 
     if not training_data_path.exists():
-        console.print(
-            f"[red]✗ Training data file not found: {training_data_path}[/red]")
+        console.print(f"[red]✗ Training data file not found: {training_data_path}[/red]")
         sys.exit(1)
 
     # Load training data
@@ -242,8 +236,7 @@ def _handle_train_model(config: pytest.Config, training_data_path: Path) -> None
         with open(training_data_path, "r") as f:
             dataset = json.load(f)
         examples = dataset.get("examples", [])
-        console.print(
-            f"[green]✓[/green] Loaded {len(examples)} training examples")
+        console.print(f"[green]✓[/green] Loaded {len(examples)} training examples")
     except Exception as e:
         console.print(f"[red]✗ Error loading training data: {e}[/red]")
         sys.exit(1)
@@ -265,10 +258,8 @@ def _handle_train_model(config: pytest.Config, training_data_path: Path) -> None
         model_dir = project_root / ".coverage_impact" / "models"
         model_dir.mkdir(parents=True, exist_ok=True)
 
-        version, model_path = get_next_version(
-            model_dir, "complexity_model_v", ".pkl")
-        console.print(
-            f"[dim]Auto-incrementing model version to {version}[/dim]")
+        version, model_path = get_next_version(model_dir, "complexity_model_v", ".pkl")
+        console.print(f"[dim]Auto-incrementing model version to {version}[/dim]")
 
         model.save(
             model_path,
@@ -281,8 +272,7 @@ def _handle_train_model(config: pytest.Config, training_data_path: Path) -> None
         )
 
         console.print(f"\n[green]✓[/green] Model saved to {model_path}")
-        console.print(
-            "\n[yellow]Tip:[/yellow] Configure in pytest.ini (point to directory - auto-detects latest):")
+        console.print("\n[yellow]Tip:[/yellow] Configure in pytest.ini (point to directory - auto-detects latest):")
         console.print("  [pytest]")
         console.print("  coverage_impact_model_path = .coverage_impact/models")
 
@@ -307,8 +297,7 @@ def _handle_train(config: pytest.Config) -> None:
     # Step 1: Collect training data (with auto-versioning)
     console.print("\n[bold]Step 1: Collecting Training Data[/bold]")
     training_data_dir = project_root / ".coverage_impact" / "training_data"
-    training_data_path = _handle_collect_training_data(
-        config, training_data_dir)
+    training_data_path = _handle_collect_training_data(config, training_data_dir)
 
     # Step 2: Train model (with auto-versioning)
     console.print("\n[bold]Step 2: Training Model[/bold]")
@@ -338,8 +327,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         # Check if we have coverage data
         coverage_file = project_root / "coverage.json"
         if not coverage_file.exists():
-            console.print(
-                "[yellow]⚠ Warning: coverage.json not found. Run pytest with --cov first.[/yellow]")
+            console.print("[yellow]⚠ Warning: coverage.json not found. Run pytest with --cov first.[/yellow]")
             return
 
         # Create analyzer and get model path
@@ -347,10 +335,8 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         console.print("[dim]Analyzing coverage impact...[/dim]")
 
         # Get model path (CLI > config system)
-        cli_model_path = session.config.getoption(
-            "--coverage-impact-model-path")
-        model_path = analyzer.get_model_path(
-            cli_model_path) if cli_model_path else None
+        cli_model_path = session.config.getoption("--coverage-impact-model-path")
+        model_path = analyzer.get_model_path(cli_model_path) if cli_model_path else None
 
         if not model_path:
             # Fallback to config system
@@ -373,17 +359,13 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         complexity_scores = results.get("complexity_scores", {})
         prioritized = results["prioritized"]
 
-        console.print(
-            f"[green]✓[/green] Found {len(call_graph.graph)} functions")
-        console.print(
-            f"[green]✓[/green] Calculated scores for {len(impact_scores)} functions")
+        console.print(f"[green]✓[/green] Found {len(call_graph.graph)} functions")
+        console.print(f"[green]✓[/green] Calculated scores for {len(impact_scores)} functions")
 
         if complexity_scores:
-            console.print(
-                f"[green]✓[/green] Estimated complexity for {len(complexity_scores)} functions")
+            console.print(f"[green]✓[/green] Estimated complexity for {len(complexity_scores)} functions")
 
-        console.print(
-            f"[green]✓[/green] Prioritized {len(prioritized)} functions")
+        console.print(f"[green]✓[/green] Prioritized {len(prioritized)} functions")
 
         # Generate terminal report
         top_n = session.config.getoption("--coverage-impact-top", default=20)
@@ -396,8 +378,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         if json_path:
             json_reporter = JSONReporter()
             json_reporter.generate_report(impact_scores, Path(json_path))
-            console.print(
-                f"\n[green]✓[/green] JSON report saved to {json_path}")
+            console.print(f"\n[green]✓[/green] JSON report saved to {json_path}")
 
         # Generate HTML report if requested
         html_path = session.config.getoption("--coverage-impact-html")
@@ -405,8 +386,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
             console.print("\n[yellow]⚠ HTML reports coming soon[/yellow]")
 
     except Exception as e:
-        console.print(
-            f"\n[red]✗ Error generating coverage impact report: {e}[/red]")
+        console.print(f"\n[red]✗ Error generating coverage impact report: {e}[/red]")
         import traceback
 
         console.print(f"[dim]{traceback.format_exc()}[/dim]")
