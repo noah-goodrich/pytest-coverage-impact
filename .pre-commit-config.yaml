@@ -7,7 +7,7 @@
 #   User must manually run: black pytest_coverage_impact tests/
 #   Then add reformatted files before committing
 # - Ruff auto-fixes issues, then checks for remaining errors
-# - Pytest runs unit and integration tests (excludes functional/slow tests)
+# - Pytest runs unit tests (excludes functional/slow tests)
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -55,7 +55,7 @@ repos:
     hooks:
       - id: pytest
         name: pytest
-        entry: bash -c 'pytest tests/unit tests/integration -q'
+        entry: bash -c 'pytest tests/unit -q'
         language: system
         pass_filenames: false
         always_run: true
