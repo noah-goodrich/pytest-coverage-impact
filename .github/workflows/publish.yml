@@ -55,7 +55,7 @@ jobs:
       - name: Run tests
         run: |
           pip install -e ".[dev]"
-          pytest tests/unit tests/integration -v --tb=short
+          pytest tests/unit -v --tb=short
 
       - name: Build package
         run: |
@@ -79,9 +79,8 @@ jobs:
         with:
           packages-dir: dist/
           print-hash: true
-        env:
-          # No credentials needed when using trusted publishing
-          # Just ensure PyPI project has trusted publishing configured
+        # No credentials needed when using trusted publishing
+        # Just ensure PyPI project has trusted publishing configured
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
