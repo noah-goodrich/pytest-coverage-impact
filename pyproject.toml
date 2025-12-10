@@ -8,7 +8,7 @@ version = "0.1.2"
 description = "ML-powered test coverage analysis plugin for pytest"
 readme = "README.md"
 requires-python = ">=3.8"
-license = "MIT"
+license = {text = "MIT"}
 authors = [
     {name = "Coverage Impact Team"}
 ]
