@@ -8,6 +8,8 @@ ML-powered test coverage analysis plugin for pytest that identifies high-impact,
 - **ML Complexity Estimation**: Predicts test complexity with confidence intervals
 - **Prioritization**: Suggests what to test first based on impact and complexity
 - **Works Out of the Box**: Includes pre-trained model, no configuration required
+- **Fast Performance**: Optimized for speed (analyzes 1700+ functions in ~1.5 seconds)
+- **Real-time Progress**: Visual progress bars and step-by-step timing
 
 ## Installation
 
@@ -74,6 +76,7 @@ See [docs/TRAINING_COMMANDS.md](docs/TRAINING_COMMANDS.md) for details.
 - **[docs/FORMULA_EXPLANATION.md](docs/FORMULA_EXPLANATION.md)** - How scores are calculated
 - **[docs/CONFIDENCE_AND_PRIORITY.md](docs/CONFIDENCE_AND_PRIORITY.md)** - How confidence affects prioritization
 - **[docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)** - Releasing and publishing to PyPI
+- **[docs/PERFORMANCE.md](docs/PERFORMANCE.md)** - Performance optimizations explained
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history
 
 ## Development

@@ -134,18 +134,27 @@ class CallGraph:
             caller_data["calls"].add(call_to_add)
             self.graph[call_to_add]["called_by"].add(caller_name)
 
-    def resolve_method_calls(self) -> None:
+    def resolve_method_calls(self, progress_monitor=None) -> None:
         """Resolve method calls like logger.error() to actual method definitions
 
         This matches calls like:
         - logger.error() → SnowfortLogger.error()
         - self.logger.error() → SnowfortLogger.error()
         - obj.method() → ClassName.method()
+
+        Args:
+            progress_monitor: Optional progress monitor for showing progress
         """
         class_methods = self._build_class_methods_mapping()
 
+        # Create progress task if monitor provided
+        task_id = None
+        if progress_monitor:
+            total_callers = len(self.graph)
+            task_id = progress_monitor.add_task("[yellow]Resolving method calls", total=total_callers)
+
         # Resolve calls for each caller
-        for caller_name, caller_data in list(self.graph.items()):
+        for idx, (caller_name, caller_data) in enumerate(list(self.graph.items())):
             calls_to_remove = []
             calls_to_add = []
 
@@ -158,38 +167,74 @@ class CallGraph:
             if calls_to_add or calls_to_remove:
                 self._update_calls_for_caller(caller_name, caller_data, calls_to_add, calls_to_remove)
 
+            # Update progress
+            if progress_monitor and task_id:
+                if (idx + 1) % 100 == 0 or idx == len(self.graph) - 1:
+                    progress_monitor.update(
+                        task_id, advance=1, description=f"[yellow]Resolving method calls: {idx + 1}/{total_callers}"
+                    )
+
+        if progress_monitor and task_id:
+            progress_monitor.complete_task(task_id)
+
+    def calculate_all_impacts(self) -> Dict[str, int]:
+        """Calculate impact scores for all functions using dynamic programming
+
+        Impact = direct_callers + sum(impact of all direct_callers)
+        This is much faster than calling get_impact() for each function individually.
+
+        Uses memoization and processes functions in dependency order to avoid redundant calculations.
+
+        Returns:
+            Dictionary mapping function names to their impact scores
+        """
+        visited: Set[str] = set()
+
+        def compute_impact(func_name: str) -> int:
+            """Compute impact for a function using memoization"""
+            # Check cache first
+            if func_name in self._impact_cache:
+                return self._impact_cache[func_name]
+
+            # Check for cycles
+            if func_name in visited:
+                # Cycle detected - return 0 to break recursion
+                return 0
+
+            visited.add(func_name)
+
+            # Count direct callers
+            direct_calls = len(self.graph[func_name]["called_by"])
+
+            # Count indirect calls: sum of impacts of all direct callers
+            indirect_calls = 0
+            for caller in self.graph[func_name]["called_by"]:
+                indirect_calls += compute_impact(caller)
+
+            total_impact = direct_calls + indirect_calls
+
+            # Cache and return
+            self._impact_cache[func_name] = total_impact
+            visited.remove(func_name)  # Remove from visited after processing
+
+            return total_impact
+
+        # Compute impact for all functions
+        for func_name in self.graph:
+            if func_name not in self._impact_cache:
+                compute_impact(func_name)
+
+        # Return all cached impacts
+        return dict(self._impact_cache)
+
     def get_impact(self, function_name: str, visited: Optional[Set[str]] = None) -> int:
         """Calculate total impact (direct + indirect callers) for a function
 
-        Uses memoization to cache results and prevent redundant calculations.
+        Uses cached results from calculate_all_impacts() - always call calculate_all_impacts()
+        first for best performance.
         """
-        # Check cache first (only for top-level calls without visited set)
-        if visited is None and function_name in self._impact_cache:
-            return self._impact_cache[function_name]
-
-        if visited is None:
-            visited = set()
-
-        if function_name in visited:
-            return 0
-
-        visited.add(function_name)
-
-        # Count direct callers
-        direct_calls = len(self.graph[function_name]["called_by"])
-
-        # Count indirect calls (recursively)
-        indirect_calls = 0
-        for caller in self.graph[function_name]["called_by"]:
-            indirect_calls += self.get_impact(caller, visited.copy())
-
-        total_impact = direct_calls + indirect_calls
-
-        # Cache the result (only cache at top level to avoid circular dependency issues)
-        if len(visited) == 1:  # Top-level call
-            self._impact_cache[function_name] = total_impact
-
-        return total_impact
+        # Get from cache (should be populated by calculate_all_impacts)
+        return self._impact_cache.get(function_name, 0)
 
 
 class CallGraphVisitor(ast.NodeVisitor):
@@ -258,12 +303,15 @@ def find_python_files(root: Path, exclude_patterns: Optional[List[str]] = None) 
     return files
 
 
-def build_call_graph(root: Path, package_prefix: Optional[str] = None) -> CallGraph:
+def build_call_graph(  # noqa: C901 - Orchestrates call graph construction from AST analysis
+    root: Path, package_prefix: Optional[str] = None, progress_monitor=None
+) -> CallGraph:
     """Build call graph from codebase AST
 
     Args:
         root: Root directory of the codebase
         package_prefix: Optional package prefix to filter functions (e.g., "snowfort/")
+        progress_monitor: Optional progress monitor for showing progress
 
     Returns:
         CallGraph object with function relationships
@@ -271,6 +319,11 @@ def build_call_graph(root: Path, package_prefix: Optional[str] = None) -> CallGr
     call_graph = CallGraph()
     files = find_python_files(root)
     root_path = Path(root).resolve()
+
+    # Create progress task for file parsing
+    file_task_id = None
+    if progress_monitor:
+        file_task_id = progress_monitor.add_task("[green]Parsing files", total=len(files))
 
     for file_path in files:
         try:
@@ -341,11 +394,22 @@ def build_call_graph(root: Path, package_prefix: Optional[str] = None) -> CallGr
             visitor = FunctionVisitor(call_graph, file_path_rel)
             visitor.visit(tree)
 
+            # Update progress with current file
+            if progress_monitor and file_task_id:
+                file_name = file_path_rel.split("/")[-1]
+                progress_monitor.update_description(file_task_id, f"[green]Parsing files: {file_name}")
+                progress_monitor.update(file_task_id, advance=1)
+
         except (SyntaxError, UnicodeDecodeError, IOError):
             # Skip files that can't be parsed
+            if progress_monitor and file_task_id:
+                progress_monitor.update(file_task_id, advance=1)
             continue
 
     # After building the graph, resolve method calls
-    call_graph.resolve_method_calls()
+    call_graph.resolve_method_calls(progress_monitor=progress_monitor)
+
+    if progress_monitor and file_task_id:
+        progress_monitor.complete_task(file_task_id)
 
     return call_graph

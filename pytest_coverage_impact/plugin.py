@@ -306,7 +306,9 @@ def _handle_train(config: pytest.Config) -> None:
     console.print("\n[green]✓[/green] [bold]Training complete![/bold]")
 
 
-def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+def pytest_sessionfinish(  # noqa: C901 - Handles multiple CLI options and orchestrates analysis
+    session: pytest.Session, exitstatus: int
+) -> None:
     """Generate coverage impact report after test session"""
     if not session.config.getoption("--coverage-impact"):
         return
@@ -332,7 +334,6 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
 
         # Create analyzer and get model path
         analyzer = CoverageImpactAnalyzer(project_root)
-        console.print("[dim]Analyzing coverage impact...[/dim]")
 
         # Get model path (CLI > config system)
         cli_model_path = session.config.getoption("--coverage-impact-model-path")
@@ -344,30 +345,70 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
 
             model_path = get_model_path(session.config, project_root)
 
-        # Perform analysis with model path
-        try:
-            results = analyzer.analyze(coverage_file, model_path=model_path)
-        except FileNotFoundError as e:
-            console.print(f"[yellow]⚠ {e}[/yellow]")
-            return
-        except ValueError as e:
-            console.print(f"[yellow]⚠ {e}[/yellow]")
-            return
+        # Create progress monitor for analysis
+        from pytest_coverage_impact.progress import ProgressMonitor
 
-        call_graph = results["call_graph"]
-        impact_scores = results["impact_scores"]
-        complexity_scores = results.get("complexity_scores", {})
-        prioritized = results["prioritized"]
+        with ProgressMonitor(console, enabled=True) as progress:
+            console.print("[dim]Analyzing coverage impact...[/dim]")
 
-        console.print(f"[green]✓[/green] Found {len(call_graph.graph)} functions")
-        console.print(f"[green]✓[/green] Calculated scores for {len(impact_scores)} functions")
+            # Perform analysis with model path and progress monitor
+            try:
+                results = analyzer.analyze(coverage_file, model_path=model_path, progress_monitor=progress)
+            except FileNotFoundError as e:
+                console.print(f"[yellow]⚠ {e}[/yellow]")
+                return
+            except ValueError as e:
+                console.print(f"[yellow]⚠ {e}[/yellow]")
+                return
 
-        if complexity_scores:
-            console.print(f"[green]✓[/green] Estimated complexity for {len(complexity_scores)} functions")
+            call_graph = results["call_graph"]
+            impact_scores = results["impact_scores"]
+            complexity_scores = results.get("complexity_scores", {})
+            prioritized = results["prioritized"]
+            timings = results.get("timings", {})
 
-        console.print(f"[green]✓[/green] Prioritized {len(prioritized)} functions")
+            console.print(f"[green]✓[/green] Found {len(call_graph.graph)} functions")
+            console.print(f"[green]✓[/green] Calculated scores for {len(impact_scores)} functions")
 
-        # Generate terminal report
+            if complexity_scores:
+                console.print(f"[green]✓[/green] Estimated complexity for {len(complexity_scores)} functions")
+
+            console.print(f"[green]✓[/green] Prioritized {len(prioritized)} functions")
+
+            # Display timing summary
+            if timings:
+                from rich.table import Table
+
+                timing_table = Table(title="Performance Summary", show_header=True, header_style="bold magenta")
+                timing_table.add_column("Step", style="cyan", no_wrap=True)
+                timing_table.add_column("Time", justify="right", style="green")
+                timing_table.add_column("Percentage", justify="right", style="yellow")
+
+                total = timings.get("total", 0)
+                step_names = {
+                    "build_call_graph": "Build Call Graph",
+                    "load_coverage_data": "Load Coverage Data",
+                    "calculate_impact_scores": "Calculate Impact Scores",
+                    "estimate_complexity": "Estimate Complexity",
+                    "prioritize_functions": "Prioritize Functions",
+                }
+
+                for step_key, step_display in step_names.items():
+                    if step_key in timings:
+                        step_time = timings[step_key]
+                        if step_time > 0:
+                            pct = (step_time / total * 100) if total > 0 else 0
+                            timing_table.add_row(step_display, f"{step_time:.2f}s", f"{pct:.1f}%")
+
+                if total > 0:
+                    timing_table.add_section()
+                    timing_table.add_row(
+                        "[bold]TOTAL[/bold]", f"[bold]{total:.2f}s[/bold]", "100.0%", style="bold green"
+                    )
+                    console.print("\n")
+                    console.print(timing_table)
+
+        # Generate terminal report (outside progress monitor)
         top_n = session.config.getoption("--coverage-impact-top", default=20)
         console.print("\n")
         reporter = TerminalReporter(console)

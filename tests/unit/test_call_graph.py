@@ -48,6 +48,9 @@ def test_call_graph_get_impact():
     graph.add_call("module.py::func1", "module.py::func2")
     graph.add_call("module.py::func2", "module.py::func3")
 
+    # Pre-compute all impacts (required for get_impact to work)
+    graph.calculate_all_impacts()
+
     # func3 has 2 indirect callers (func1, func2)
     impact = graph.get_impact("module.py::func3")
     assert impact == 2
