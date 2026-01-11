@@ -24,6 +24,8 @@ class ComplexityEstimator:
         if model_path and model_path.exists():
             self.load_model(model_path)
 
+        self.confidence_level = 0.95
+
     def load_model(self, model_path: Path) -> None:
         """Load trained model
 
@@ -38,8 +40,6 @@ class ComplexityEstimator:
         func_node: ast.FunctionDef,
         module_tree: Optional[ast.AST] = None,
         file_path: Optional[str] = None,
-        with_confidence: bool = True,
-        confidence_level: float = 0.95,
     ) -> Tuple[float, Optional[float], Optional[float]]:
         """Estimate complexity for a function
 
@@ -52,7 +52,7 @@ class ComplexityEstimator:
 
         Returns:
             Tuple of (complexity_score, lower_bound, upper_bound)
-            If with_confidence=False or model not loaded, bounds will be None
+            If model not loaded, bounds will be None
         """
         if self.model is None:
             # Fallback: simple heuristic if model not available
@@ -62,12 +62,9 @@ class ComplexityEstimator:
         features = FeatureExtractor.extract_features(func_node, module_tree, file_path)
 
         # Predict with confidence intervals
-        if with_confidence:
-            score, lower, upper = self.model.predict_with_confidence(features, confidence_level)
-            return (score, lower, upper)
-        else:
-            score = self.model.predict(features)
-            return (score, None, None)
+        # Predict with confidence intervals
+        score, lower, upper = self.model.predict_with_confidence(features, self.confidence_level)
+        return (score, lower, upper)
 
     def _fallback_complexity(self, func_node: ast.FunctionDef) -> float:
         """Simple fallback complexity estimation when model not available
@@ -78,8 +75,10 @@ class ComplexityEstimator:
         Returns:
             Simple complexity estimate (0-1)
         """
+        if not func_node.body:
+            return 1.0
         # Simple heuristic based on lines and branches
-        lines = func_node.end_lineno - func_node.lineno + 1 if func_node.end_lineno else 10
+        lines = float(func_node.end_lineno - func_node.lineno + 1) if func_node.end_lineno else 10
 
         branches = 0
         for node in ast.walk(func_node):

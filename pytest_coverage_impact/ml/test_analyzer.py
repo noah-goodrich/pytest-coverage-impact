@@ -91,6 +91,8 @@ class TestAnalyzer:
                 "has_slow_marker": 0.0,
             }
 
+        # JUSTIFICATION: Internal static method calls
+        # pylint: disable=clean-arch-visibility
         features = {
             "test_lines": TestAnalyzer._count_test_lines(tree),
             "num_assertions": TestAnalyzer._count_assertions(tree),
@@ -101,6 +103,7 @@ class TestAnalyzer:
             "has_e2e_marker": TestAnalyzer._has_marker(tree, "e2e"),
             "has_slow_marker": TestAnalyzer._has_marker(tree, "slow"),
         }
+        # pylint: enable=clean-arch-visibility
 
         return features
 
@@ -189,6 +192,8 @@ class TestAnalyzer:
     @staticmethod
     def _count_fixture_decorators(tree: ast.AST) -> float:
         """Count @pytest.fixture decorators"""
+        # JUSTIFICATION: Nested loops required for AST traversal
+        # pylint: disable=too-many-nested-blocks
         count = 0
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
@@ -217,8 +222,11 @@ class TestAnalyzer:
     @staticmethod
     def _count_fixtures(tree: ast.AST) -> float:
         """Count pytest fixtures used"""
+        # JUSTIFICATION: Internal static method calls
+        # pylint: disable=clean-arch-visibility
         decorator_count = TestAnalyzer._count_fixture_decorators(tree)
         parameter_count = TestAnalyzer._count_fixture_parameters(tree)
+        # pylint: enable=clean-arch-visibility
         return float(decorator_count + parameter_count)
 
     @staticmethod
@@ -233,6 +241,8 @@ class TestAnalyzer:
             True if decorator is the specified marker
         """
         if isinstance(decorator, ast.Call):
+            # JUSTIFICATION: Logic requires deep nesting
+            # pylint: disable=too-many-nested-blocks
             if isinstance(decorator.func, ast.Attribute):
                 if decorator.func.attr == "mark":
                     # Check args for marker name
@@ -251,6 +261,9 @@ class TestAnalyzer:
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
                 for decorator in node.decorator_list:
+                    # JUSTIFICATION: Internal static method calls
+                    # pylint: disable=clean-arch-visibility
                     if TestAnalyzer._check_decorator_for_marker(decorator, marker_name):
                         return 1.0
+                    # pylint: enable=clean-arch-visibility
         return 0.0

@@ -52,7 +52,7 @@ def test_get_next_version_creates_directory():
     with tempfile.TemporaryDirectory() as tmpdir:
         base_path = Path(tmpdir) / "new" / "nested" / "dir"
 
-        version, path = get_next_version(base_path, "test_v", ".txt")
+        _, path = get_next_version(base_path, "test_v", ".txt")
 
         assert base_path.exists()
         assert path.parent == base_path
@@ -240,7 +240,7 @@ def test_get_latest_version_directory_contains_subdirectories():
 
         # Should only find files in base_path, not subdirectories
         assert result is not None
-        version, path = result
+        version, _ = result
         assert version == "1.0"
 
 

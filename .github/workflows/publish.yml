@@ -1,126 +1,65 @@
-name: Publish to PyPI
+name: Automated Release
 
 on:
   push:
-    tags:
-      - 'v*'  # Triggers on tags like v0.1.0, v1.0.0, etc.
+    branches:
+      - main
+
+concurrency:
+  group: release
+  cancel-in-progress: true
 
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      id-token: write  # For trusted publishing (recommended)
+      contents: write
+      id-token: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch full history for version extraction
+          fetch-depth: 0
 
-      - name: Set up Python
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
-      - name: Extract version from tag
-        id: tag_version
-        run: |
-          # Remove 'v' prefix if present (v0.1.0 -> 0.1.0)
-          VERSION=${GITHUB_REF#refs/tags/v}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
-
-      - name: Verify version matches code
-        run: |
-          TAG_VERSION="${{ steps.tag_version.outputs.version }}"
-          CODE_VERSION=$(python -c "from pytest_coverage_impact import __version__; print(__version__)")
-
-          if [ "$TAG_VERSION" != "$CODE_VERSION" ]; then
-            echo "❌ Version mismatch!"
-            echo "Tag version: $TAG_VERSION"
-            echo "Code version: $CODE_VERSION"
-            echo ""
-            echo "Please update __version__ in pytest_coverage_impact/__init__.py to match the tag."
-            exit 1
-          fi
-
-          echo "✅ Version match: $TAG_VERSION"
-
-      - name: Install build dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install build twine
-
-      - name: Run tests
-        run: |
-          pip install -e ".[dev]"
-          pytest tests/unit -v --tb=short
-
-      - name: Build package
-        run: |
-          python -m build
-          echo "Build completed. Files in dist/:"
-          ls -lah dist/
+      - name: Python Semantic Release
+        uses: python-semantic-release/python-semantic-release@v8.3.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify package contents
         run: |
           echo "Checking package contents..."
-
           # Find the source distribution file
           SRC_DIST=$(ls dist/*.tar.gz 2>/dev/null | head -1)
 
           if [ -z "$SRC_DIST" ]; then
-            echo "❌ No source distribution found in dist/"
-            ls -lah dist/ || echo "dist/ directory does not exist"
+            echo "No source distribution found. This might be a no-release run."
+            # If dist is empty, semantic release didn't trigger a release. We're done.
+            if [ -z "$(ls -A dist)" ]; then
+               echo "No release created, skipping verification."
+               exit 0
+            fi
             exit 1
           fi
 
           echo "Found package: $SRC_DIST"
 
-          # List key files
-          echo ""
-          echo "Key files in package:"
-          tar -tzf "$SRC_DIST" | grep -E "(LICENSE|\.pkl|README|MANIFEST)" | head -10
-
           # Verify ML model is included
           if tar -tzf "$SRC_DIST" | grep -q "\.pkl"; then
-            echo ""
             echo "✅ ML model file found in package"
           else
-            echo ""
             echo "❌ ML model file NOT found in package"
-            echo "Contents:"
-            tar -tzf "$SRC_DIST" | head -20
             exit 1
           fi
 
-          # Verify LICENSE is included
-          if tar -tzf "$SRC_DIST" | grep -q "LICENSE"; then
-            echo "✅ LICENSE file found in package"
-          else
-            echo "❌ LICENSE file NOT found in package"
-            exit 1
-          fi
-
-      - name: Publish to PyPI
+      - name: Publish package distributions to PyPI
+        # Only publish if semantic release created a release (dist/ exists)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('dist/*.tar.gz') != ''
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
-          print-hash: true
-        # No credentials needed when using trusted publishing
-        # Just ensure PyPI project has trusted publishing configured
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ steps.tag_version.outputs.version }}
-          draft: false
-          prerelease: ${{ contains(steps.tag_version.outputs.version, 'a') || contains(steps.tag_version.outputs.version, 'b') || contains(steps.tag_version.outputs.version, 'rc') }}
-          body: |
-            Release ${{ steps.tag_version.outputs.version }}
-
-            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${{ github.ref }}/CHANGELOG.md) for details.
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -227,6 +227,8 @@ def test_two():
 """
     tree = ast.parse(code)
 
+    # JUSTIFICATION: White-box testing of private component internals required for coverage
+    # pylint: disable=protected-access,private-method-test,clean-arch-visibility
     lines = TestAnalyzer._count_test_lines(tree)
 
     assert lines > 0
@@ -242,6 +244,8 @@ def test_assertions():
 """
     tree = ast.parse(code)
 
+    # JUSTIFICATION: White-box testing of private component internals required for coverage
+    # pylint: disable=protected-access,private-method-test,clean-arch-visibility
     assertions = TestAnalyzer._count_assertions(tree)
 
     assert assertions >= 3.0
@@ -261,6 +265,8 @@ def helper_func():
 """
     tree = ast.parse(code)
 
+    # JUSTIFICATION: White-box testing of private component internals required for coverage
+    # pylint: disable=protected-access,private-method-test,clean-arch-visibility
     count = TestAnalyzer._count_test_functions(tree)
 
     assert count == 2.0
@@ -278,6 +284,8 @@ def test_with_mocks():
 """
     tree = ast.parse(code)
 
+    # JUSTIFICATION: White-box testing of private component internals required for coverage
+    # pylint: disable=protected-access,private-method-test,clean-arch-visibility
     mocks = TestAnalyzer._count_mocks(tree)
 
     assert mocks >= 2.0
@@ -297,6 +305,8 @@ def test_func(fixture_param):
 """
     tree = ast.parse(code)
 
+    # JUSTIFICATION: White-box testing of private component internals required for coverage
+    # pylint: disable=protected-access,private-method-test,clean-arch-visibility
     fixtures = TestAnalyzer._count_fixtures(tree)
 
     assert fixtures > 0
@@ -315,6 +325,8 @@ def test_func():
 """
     tree = ast.parse(code)
 
+    # JUSTIFICATION: White-box testing of private component internals required for coverage
+    # pylint: disable=protected-access,private-method-test,clean-arch-visibility
     has_marker = TestAnalyzer._has_marker(tree, "integration")
 
     # Current implementation may not detect nested attribute markers
@@ -330,6 +342,8 @@ def test_func():
 """
     tree = ast.parse(code)
 
+    # JUSTIFICATION: White-box testing of private component internals required for coverage
+    # pylint: disable=protected-access,private-method-test,clean-arch-visibility
     has_marker = TestAnalyzer._has_marker(tree, "integration")
 
     assert has_marker == 0.0
@@ -343,4 +357,4 @@ def test_map_function_to_tests_outside_root():
 
         matching = TestAnalyzer.map_function_to_tests(function_file, [], root)
 
-        assert matching == []
+        assert not matching

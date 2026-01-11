@@ -105,11 +105,26 @@ def test_complexity_model_predict():
 
     # Train with sufficient data for CV
     training_data = [
-        {"features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0}, "complexity_label": 0.3},
-        {"features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0}, "complexity_label": 0.7},
-        {"features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0}, "complexity_label": 0.5},
-        {"features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0}, "complexity_label": 0.4},
-        {"features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0}, "complexity_label": 0.6},
+        {
+            "features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0},
+            "complexity_label": 0.3,
+        },
+        {
+            "features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0},
+            "complexity_label": 0.7,
+        },
+        {
+            "features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0},
+            "complexity_label": 0.5,
+        },
+        {
+            "features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0},
+            "complexity_label": 0.4,
+        },
+        {
+            "features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0},
+            "complexity_label": 0.6,
+        },
     ]
 
     model.train(training_data)
@@ -130,11 +145,26 @@ def test_complexity_model_predict_missing_features():
     model = ComplexityModel(n_estimators=10, random_state=42)
 
     training_data = [
-        {"features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0}, "complexity_label": 0.3},
-        {"features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0}, "complexity_label": 0.4},
-        {"features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0}, "complexity_label": 0.5},
-        {"features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0}, "complexity_label": 0.6},
-        {"features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0}, "complexity_label": 0.7},
+        {
+            "features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0},
+            "complexity_label": 0.3,
+        },
+        {
+            "features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0},
+            "complexity_label": 0.4,
+        },
+        {
+            "features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0},
+            "complexity_label": 0.5,
+        },
+        {
+            "features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0},
+            "complexity_label": 0.6,
+        },
+        {
+            "features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0},
+            "complexity_label": 0.7,
+        },
     ]
 
     model.train(training_data)
@@ -155,11 +185,26 @@ def test_complexity_model_predict_with_confidence():
     model = ComplexityModel(n_estimators=10, random_state=42)
 
     training_data = [
-        {"features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0}, "complexity_label": 0.3},
-        {"features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0}, "complexity_label": 0.7},
-        {"features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0}, "complexity_label": 0.5},
-        {"features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0}, "complexity_label": 0.4},
-        {"features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0}, "complexity_label": 0.6},
+        {
+            "features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0},
+            "complexity_label": 0.3,
+        },
+        {
+            "features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0},
+            "complexity_label": 0.7,
+        },
+        {
+            "features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0},
+            "complexity_label": 0.5,
+        },
+        {
+            "features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0},
+            "complexity_label": 0.4,
+        },
+        {
+            "features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0},
+            "complexity_label": 0.6,
+        },
     ]
 
     model.train(training_data)
@@ -198,11 +243,26 @@ def test_complexity_model_get_feature_importance():
     model = ComplexityModel(n_estimators=10, random_state=42)
 
     training_data = [
-        {"features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0}, "complexity_label": 0.3},
-        {"features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0}, "complexity_label": 0.7},
-        {"features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0}, "complexity_label": 0.5},
-        {"features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0}, "complexity_label": 0.4},
-        {"features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0}, "complexity_label": 0.6},
+        {
+            "features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0},
+            "complexity_label": 0.3,
+        },
+        {
+            "features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0},
+            "complexity_label": 0.7,
+        },
+        {
+            "features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0},
+            "complexity_label": 0.5,
+        },
+        {
+            "features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0},
+            "complexity_label": 0.4,
+        },
+        {
+            "features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0},
+            "complexity_label": 0.6,
+        },
     ]
 
     model.train(training_data)
@@ -223,11 +283,41 @@ def test_complexity_model_save_and_load():
         # Train and save
         model = ComplexityModel(n_estimators=10, random_state=42)
         training_data = [
-            {"features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0}, "complexity_label": 0.3},
-            {"features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0}, "complexity_label": 0.4},
-            {"features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0}, "complexity_label": 0.5},
-            {"features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0}, "complexity_label": 0.6},
-            {"features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0}, "complexity_label": 0.7},
+            {
+                "features": {
+                    "lines_of_code": 10.0,
+                    "cyclomatic_complexity": 1.0,
+                },
+                "complexity_label": 0.3,
+            },
+            {
+                "features": {
+                    "lines_of_code": 20.0,
+                    "cyclomatic_complexity": 2.0,
+                },
+                "complexity_label": 0.4,
+            },
+            {
+                "features": {
+                    "lines_of_code": 30.0,
+                    "cyclomatic_complexity": 3.0,
+                },
+                "complexity_label": 0.5,
+            },
+            {
+                "features": {
+                    "lines_of_code": 40.0,
+                    "cyclomatic_complexity": 4.0,
+                },
+                "complexity_label": 0.6,
+            },
+            {
+                "features": {
+                    "lines_of_code": 50.0,
+                    "cyclomatic_complexity": 5.0,
+                },
+                "complexity_label": 0.7,
+            },
         ]
         model.train(training_data)
         model.save(model_path, metadata={"version": "1.0"})

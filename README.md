@@ -1,5 +1,9 @@
 # pytest-coverage-impact
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/noah-goodrich/pytest-coverage-impact/main/assets/logo.png" width="300" alt="Pytest Coverage Impact Logo">
+</p>
+
 ML-powered test coverage analysis plugin for pytest that identifies high-impact, low-complexity areas to test first.
 
 ## Features

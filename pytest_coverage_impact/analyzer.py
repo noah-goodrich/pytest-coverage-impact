@@ -1,14 +1,21 @@
 """Coverage impact analysis orchestrator - extractable business logic"""
 
 import ast
+import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from pytest_coverage_impact.call_graph import build_call_graph
+from pytest_coverage_impact.config import (
+    get_default_bundled_model_path,
+    get_model_path_from_env,
+    get_model_path_from_project_dir,
+)
 from pytest_coverage_impact.impact_calculator import ImpactCalculator, load_coverage_data
 from pytest_coverage_impact.ml.complexity_estimator import ComplexityEstimator
 from pytest_coverage_impact.prioritizer import Prioritizer
 from pytest_coverage_impact.progress import ProgressMonitor
+from pytest_coverage_impact.utils import parse_ast_tree, resolve_model_path_with_auto_detect
 
 
 class CoverageImpactAnalyzer:
@@ -71,8 +78,6 @@ class CoverageImpactAnalyzer:
             - prioritized: List of prioritized functions
             - timings: Dict with timing information for each step
         """
-        import time
-
         timings = {}
 
         if coverage_file is None:
@@ -122,6 +127,8 @@ class CoverageImpactAnalyzer:
             "confidence_scores": confidence_scores,
             "prioritized": prioritized,
             "timings": timings,
+            "totals": coverage_data.get("totals", {}),
+            "files": coverage_data.get("files", {}),
         }
 
     def _estimate_complexities(  # noqa: C901 - Orchestrates ML complexity estimation with progress tracking
@@ -149,8 +156,9 @@ class CoverageImpactAnalyzer:
             # Auto-detect model path using default system
             model_path = self._get_default_model_path()
 
-        if not model_path or not model_path.exists():
-            return complexity_scores, confidence_scores
+        if model_path and not model_path.exists():
+            # Warn? Or just fallback.
+            model_path = None
 
         try:
             estimator = ComplexityEstimator(model_path)
@@ -209,31 +217,18 @@ class CoverageImpactAnalyzer:
         Returns:
             Path to model file, or None if not found
         """
-        import os
-
         # Priority 1: Environment variable
-        env_path = os.getenv("PYTEST_COVERAGE_IMPACT_MODEL_PATH")
-        if env_path:
-            from pytest_coverage_impact.utils import resolve_model_path_with_auto_detect
-
-            return resolve_model_path_with_auto_detect(env_path, self.project_root)
+        model_path = get_model_path_from_env(self.project_root)
+        if model_path:
+            return model_path
 
         # Priority 2: Project directory (user-trained model)
-        project_model_dir = self.project_root / ".coverage_impact" / "models"
-        if project_model_dir.exists() and project_model_dir.is_dir():
-            from pytest_coverage_impact.ml.versioning import get_latest_version
-
-            latest = get_latest_version(project_model_dir, "complexity_model_v", ".pkl")
-            if latest:
-                return latest[1]
+        model_path = get_model_path_from_project_dir(self.project_root)
+        if model_path:
+            return model_path
 
         # Priority 3: Plugin directory (default bundled model)
-        plugin_dir = Path(__file__).parent
-        plugin_model_path = plugin_dir / "ml" / "models" / "complexity_model_v1.0.pkl"
-        if plugin_model_path.exists():
-            return plugin_model_path.resolve()
-
-        return None
+        return get_default_bundled_model_path()
 
     def _get_ast_tree(self, func_file: Path) -> Optional[ast.AST]:
         """Get AST tree for a file, using cache if available
@@ -249,8 +244,6 @@ class CoverageImpactAnalyzer:
             return self._ast_cache[func_file]
 
         # Parse and cache
-        from pytest_coverage_impact.utils import parse_ast_tree
-
         tree = parse_ast_tree(func_file)
         if tree:
             self._ast_cache[func_file] = tree
@@ -287,7 +280,7 @@ class CoverageImpactAnalyzer:
         if not func_node:
             return None, None, None
 
-        score, lower, upper = estimator.estimate_complexity(func_node, tree, str(func_file), with_confidence=True)
+        score, lower, upper = estimator.estimate_complexity(func_node, tree, str(func_file))
         return score, lower, upper
 
     def get_model_path(self, cli_model_path: Optional[str] = None) -> Optional[Path]:
@@ -300,8 +293,6 @@ class CoverageImpactAnalyzer:
             Path to model file, or None if not found
         """
         if cli_model_path:
-            from pytest_coverage_impact.utils import resolve_model_path_with_auto_detect
-
             return resolve_model_path_with_auto_detect(cli_model_path, self.project_root)
 
         # Use config system (pytest.ini, env var, defaults)

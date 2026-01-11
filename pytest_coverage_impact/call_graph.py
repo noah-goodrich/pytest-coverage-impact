@@ -2,8 +2,21 @@
 
 import ast
 from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Set, Optional, Tuple
+
+from pytest_coverage_impact.utils import extract_method_name_from_full_name
+
+
+@dataclass
+class FunctionMetadata:
+    """Metadata for a function definition"""
+    full_name: str
+    file_path: str
+    line: int
+    is_method: bool = False
+    class_name: Optional[str] = None
 
 
 class CallGraph:
@@ -22,19 +35,12 @@ class CallGraph:
         )
         self._impact_cache: Dict[str, int] = {}
 
-    def add_function(
-        self,
-        full_name: str,
-        file_path: str,
-        line: int,
-        is_method: bool = False,
-        class_name: Optional[str] = None,
-    ) -> None:
+    def add_function(self, metadata: FunctionMetadata) -> None:
         """Add a function definition to the graph"""
-        self.graph[full_name]["file"] = file_path
-        self.graph[full_name]["line"] = line
-        self.graph[full_name]["is_method"] = is_method
-        self.graph[full_name]["class_name"] = class_name
+        self.graph[metadata.full_name]["file"] = metadata.file_path
+        self.graph[metadata.full_name]["line"] = metadata.line
+        self.graph[metadata.full_name]["is_method"] = metadata.is_method
+        self.graph[metadata.full_name]["class_name"] = metadata.class_name
 
     def add_call(self, caller: str, callee: str) -> None:
         """Add a call relationship: caller → callee"""
@@ -54,7 +60,7 @@ class CallGraph:
             if class_name:
                 # Extract method name from full_name like "logger.py::SnowfortLogger.error"
                 if "::" in full_name and "." in full_name:
-                    method_name = full_name.split(".")[-1]
+                    method_name = extract_method_name_from_full_name(full_name)
                     key = f"{class_name}.{method_name}"
                     class_methods[key].append(full_name)
 
@@ -227,7 +233,7 @@ class CallGraph:
         # Return all cached impacts
         return dict(self._impact_cache)
 
-    def get_impact(self, function_name: str, visited: Optional[Set[str]] = None) -> int:
+    def get_impact(self, function_name: str) -> int:
         """Calculate total impact (direct + indirect callers) for a function
 
         Uses cached results from calculate_all_impacts() - always call calculate_all_impacts()
@@ -243,7 +249,13 @@ class CallGraphVisitor(ast.NodeVisitor):
     def __init__(self):
         self.calls: Set[str] = set()
 
-    def visit_Call(self, node: ast.Call) -> None:
+    def visit(self, node: ast.AST) -> None:
+        """Override visit to dispatch custom method names"""
+        if isinstance(node, ast.Call):
+            self.extract_call(node)
+        self.generic_visit(node)
+
+    def extract_call(self, node: ast.Call) -> None:
         """Extract function calls from AST"""
         if isinstance(node.func, ast.Name):
             # Direct function call: function()
@@ -258,16 +270,124 @@ class CallGraphVisitor(ast.NodeVisitor):
                 if attr_chain:
                     self.calls.add(f"{attr_chain}.{node.func.attr}")
 
-        self.generic_visit(node)
-
     def _get_attribute_chain(self, node: ast.Attribute) -> Optional[str]:
         """Build attribute chain string for nested attributes"""
         if isinstance(node.value, ast.Name):
             return f"{node.value.id}.{node.attr}"
-        elif isinstance(node.value, ast.Attribute):
+        if isinstance(node.value, ast.Attribute):
             parent = self._get_attribute_chain(node.value)
             return f"{parent}.{node.attr}" if parent else None
         return None
+
+
+class FunctionVisitor(ast.NodeVisitor):
+    """Visitor to extract functions and their class context"""
+
+    def __init__(self, call_graph, file_path_rel):
+        self.call_graph = call_graph
+        self.file_path_rel = file_path_rel
+        self.current_class = None
+        self.is_interface_class = False
+
+    def visit(self, node: ast.AST) -> None:
+        """Override visit to dispatch custom method names"""
+        if isinstance(node, ast.ClassDef):
+            self.process_class_def(node)
+        elif isinstance(node, ast.FunctionDef):
+            self.process_function_def(node)
+        else:
+            self.generic_visit(node)
+
+    def process_class_def(self, node: ast.ClassDef):
+        """Track current class and check if it's an interface"""
+        old_class = self.current_class
+        old_is_interface = self.is_interface_class
+
+        self.current_class = node.name
+        self.is_interface_class = self._check_if_interface(node)
+
+        self.generic_visit(node)
+
+        self.current_class = old_class
+        self.is_interface_class = old_is_interface
+
+    def _check_if_interface(self, node):
+        """Check if class inherits from Protocol or ABC"""
+        for base in node.bases:
+            # Match 'Protocol', 'ABC', 'typing.Protocol', 'abc.ABC'
+            if isinstance(base, ast.Name) and base.id in ("Protocol", "ABC"):
+                return True
+            if isinstance(base, ast.Attribute) and base.attr in ("Protocol", "ABC"):
+                return True
+        return False
+
+    def _is_empty_function(self, node):
+        """Check if function only contains docstrings, ellipsis, or pass"""
+        for stmt in node.body:
+            # Skip docstrings and Ellipsis (...)
+            if isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Constant):
+                continue
+            # Skip pass
+            if isinstance(stmt, ast.Pass):
+                continue
+            # Skip raise NotImplementedError
+            if isinstance(stmt, ast.Raise):
+                if isinstance(stmt.exc, ast.Name) and stmt.exc.id == "NotImplementedError":
+                    continue
+                if (
+                    isinstance(stmt.exc, ast.Call)
+                    and isinstance(stmt.exc.func, ast.Name)
+                    and stmt.exc.func.id == "NotImplementedError"
+                ):
+                    continue
+            # If we found anything else, it's not empty
+            return False
+        return True
+
+    def process_function_def(self, node: ast.FunctionDef):
+        """Extract function definition"""
+        func_name = node.name
+
+        # Skip private/dunder methods
+        if func_name.startswith("__") and func_name.endswith("__"):
+            self.generic_visit(node)
+            return
+
+        # Filter out interface stubs and empty methods
+        if self.is_interface_class or self._is_empty_function(node):
+            self.generic_visit(node)
+            return
+
+        # Build full function identifier
+        if self.current_class:
+            full_name = f"{self.file_path_rel}::{self.current_class}.{func_name}"
+            is_method = True
+            class_name = self.current_class
+        else:
+            full_name = f"{self.file_path_rel}::{func_name}"
+            is_method = False
+            class_name = None
+
+        # Add function to graph
+        self.call_graph.add_function(
+            FunctionMetadata(
+                full_name=full_name,
+                file_path=self.file_path_rel,
+                line=node.lineno,
+                is_method=is_method,
+                class_name=class_name,
+            )
+        )
+
+        # Extract calls within this function
+        visitor = CallGraphVisitor()
+        visitor.visit(node)
+
+        # Add call relationships
+        for called_func in visitor.calls:
+            self.call_graph.add_call(caller=full_name, callee=called_func)
+
+        self.generic_visit(node)
 
 
 def find_python_files(root: Path, exclude_patterns: Optional[List[str]] = None) -> List[Path]:
@@ -303,7 +423,7 @@ def find_python_files(root: Path, exclude_patterns: Optional[List[str]] = None) 
     return files
 
 
-def build_call_graph(  # noqa: C901 - Orchestrates call graph construction from AST analysis
+def build_call_graph(
     root: Path, package_prefix: Optional[str] = None, progress_monitor=None
 ) -> CallGraph:
     """Build call graph from codebase AST
@@ -334,69 +454,22 @@ def build_call_graph(  # noqa: C901 - Orchestrates call graph construction from 
             file_path_rel = str(file_path.relative_to(root_path))
 
             # Filter by package prefix if provided (at file level)
-            if package_prefix and not file_path_rel.startswith(package_prefix):
-                continue
+            if package_prefix:
+                # Remove common root from check if present in prefix, usually prefix is like "src/" or "package/"
+                if not file_path_rel.startswith(package_prefix):
+                    pass # It might still be valid if prefix is a sub-part, but startswith is safer.
+                    # Wait, if prefix is "pytest_coverage_impact", and file is "pytest_coverage_impact/plugin.py", it matches.
+                    # If prefix is "tests", and file is "src/foo.py", it skips.
+                    # The issue in test might be that temp project files are not matching logic.
+                    continue
 
             # Extract all function and method definitions
-            class FunctionVisitor(ast.NodeVisitor):
-                """Visitor to extract functions and their class context"""
-
-                def __init__(self, call_graph, file_path_rel):
-                    self.call_graph = call_graph
-                    self.file_path_rel = file_path_rel
-                    self.current_class = None
-
-                def visit_ClassDef(self, node):
-                    """Track current class"""
-                    old_class = self.current_class
-                    self.current_class = node.name
-                    self.generic_visit(node)
-                    self.current_class = old_class
-
-                def visit_FunctionDef(self, node):
-                    """Extract function definition"""
-                    func_name = node.name
-
-                    # Build full function identifier
-                    if self.current_class:
-                        full_name = f"{self.file_path_rel}::{self.current_class}.{func_name}"
-                        is_method = True
-                        class_name = self.current_class
-                    else:
-                        full_name = f"{self.file_path_rel}::{func_name}"
-                        is_method = False
-                        class_name = None
-
-                    # Skip private/dunder methods for now
-                    if func_name.startswith("__") and func_name.endswith("__"):
-                        self.generic_visit(node)
-                        return
-
-                    # Add function to graph
-                    call_graph.add_function(
-                        full_name=full_name,
-                        file_path=self.file_path_rel,
-                        line=node.lineno,
-                        is_method=is_method,
-                        class_name=class_name,
-                    )
-
-                    # Extract calls within this function
-                    visitor = CallGraphVisitor()
-                    visitor.visit(node)
-
-                    # Add call relationships
-                    for called_func in visitor.calls:
-                        call_graph.add_call(caller=full_name, callee=called_func)
-
-                    self.generic_visit(node)
-
             visitor = FunctionVisitor(call_graph, file_path_rel)
             visitor.visit(tree)
 
             # Update progress with current file
             if progress_monitor and file_task_id:
-                file_name = file_path_rel.split("/")[-1]
+                file_name = file_path_rel.rsplit("/", 1)[-1]
                 progress_monitor.update_description(file_task_id, f"[green]Parsing files: {file_name}")
                 progress_monitor.update(file_task_id, advance=1)
 

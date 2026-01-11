@@ -56,7 +56,7 @@ def test_save_training_data_basic():
         assert version == "1.0"  # Default version
 
         # Verify JSON structure
-        with open(output_path, "r") as f:
+        with open(output_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         assert data["version"] == "1.0"
@@ -76,7 +76,7 @@ def test_save_training_data_with_version():
 
         assert version == "2.0"
 
-        with open(output_path, "r") as f:
+        with open(output_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         assert data["version"] == "2.0"
@@ -116,7 +116,7 @@ def test_collect_training_data_empty_codebase():
 
         training_data = collector.collect_training_data()
 
-        assert training_data == []
+        assert not training_data
 
 
 def test_collect_training_data_with_function_and_test():
@@ -272,7 +272,7 @@ def test_collect_training_data_from_codebase_with_version():
 
         assert result_path == output_path
 
-        with open(output_path, "r") as f:
+        with open(output_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         assert data["version"] == "2.3"
@@ -321,7 +321,7 @@ def test_save_training_data_empty_list():
 
         assert output_path.exists()
 
-        with open(output_path, "r") as f:
+        with open(output_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         assert data["total_examples"] == 0

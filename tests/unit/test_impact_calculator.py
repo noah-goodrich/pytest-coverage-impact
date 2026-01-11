@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from pytest_coverage_impact.call_graph import CallGraph
+from pytest_coverage_impact.call_graph import CallGraph, FunctionMetadata
 from pytest_coverage_impact.impact_calculator import (
     ImpactCalculator,
     load_coverage_data,
@@ -31,7 +31,7 @@ def test_load_coverage_data():
             }
         }
 
-        with open(coverage_file, "w") as f:
+        with open(coverage_file, "w", encoding="utf-8") as f:
             json.dump(coverage_data, f)
 
         loaded = load_coverage_data(coverage_file)
@@ -51,7 +51,7 @@ def test_load_coverage_data_file_not_found():
 def test_get_function_coverage_file_found():
     """Test getting coverage for a function when file is in coverage data"""
     call_graph = CallGraph()
-    call_graph.add_function("module.py::func1", "module.py", 10)
+    call_graph.add_function(FunctionMetadata("module.py::func1", "module.py", 10))
 
     coverage_data = {
         "files": {
@@ -77,7 +77,7 @@ def test_get_function_coverage_file_found():
 def test_get_function_coverage_file_not_found():
     """Test getting coverage when file is not in coverage data"""
     call_graph = CallGraph()
-    call_graph.add_function("module.py::func1", "module.py", 10)
+    call_graph.add_function(FunctionMetadata("module.py::func1", "module.py", 10))
 
     coverage_data = {"files": {}}
 
@@ -92,7 +92,7 @@ def test_get_function_coverage_file_not_found():
 def test_get_function_coverage_with_package_prefix():
     """Test getting coverage with package prefix"""
     call_graph = CallGraph()
-    call_graph.add_function("module.py::func1", "module.py", 10)
+    call_graph.add_function(FunctionMetadata("module.py::func1", "module.py", 10))
 
     coverage_data = {
         "files": {
@@ -108,9 +108,7 @@ def test_get_function_coverage_with_package_prefix():
     }
 
     calculator = ImpactCalculator(call_graph, coverage_data)
-    is_covered, coverage_pct, missing_lines = calculator.get_function_coverage(
-        "module.py", 10, package_prefix="package"
-    )
+    is_covered, coverage_pct, _ = calculator.get_function_coverage("module.py", 10, package_prefix="package")
 
     assert is_covered is True
     assert coverage_pct == 0.5
@@ -119,8 +117,8 @@ def test_get_function_coverage_with_package_prefix():
 def test_calculate_impact_scores_basic():
     """Test calculating impact scores"""
     call_graph = CallGraph()
-    call_graph.add_function("module.py::func1", "module.py", 10)
-    call_graph.add_function("module.py::func2", "module.py", 20)
+    call_graph.add_function(FunctionMetadata("module.py::func1", "module.py", 10))
+    call_graph.add_function(FunctionMetadata("module.py::func2", "module.py", 20))
     call_graph.add_call("module.py::func2", "module.py::func1")  # func2 calls func1
 
     coverage_data = {
@@ -148,9 +146,9 @@ def test_calculate_impact_scores_basic():
 def test_calculate_impact_scores_impact_calculation():
     """Test that impact (call frequency) is calculated correctly"""
     call_graph = CallGraph()
-    call_graph.add_function("module.py::func1", "module.py", 10)
-    call_graph.add_function("module.py::func2", "module.py", 20)
-    call_graph.add_function("module.py::func3", "module.py", 30)
+    call_graph.add_function(FunctionMetadata("module.py::func1", "module.py", 10))
+    call_graph.add_function(FunctionMetadata("module.py::func2", "module.py", 20))
+    call_graph.add_function(FunctionMetadata("module.py::func3", "module.py", 30))
 
     # func1 is called by func2 and func3 (impact = 2)
     call_graph.add_call("module.py::func2", "module.py::func1")
@@ -181,8 +179,8 @@ def test_calculate_impact_scores_impact_calculation():
 def test_calculate_impact_scores_coverage_gap():
     """Test that impact score accounts for coverage gap"""
     call_graph = CallGraph()
-    call_graph.add_function("module.py::func1", "module.py", 10)
-    call_graph.add_function("module.py::func2", "module.py", 20)
+    call_graph.add_function(FunctionMetadata("module.py::func1", "module.py", 10))
+    call_graph.add_function(FunctionMetadata("module.py::func2", "module.py", 20))
 
     coverage_data = {
         "files": {
@@ -213,8 +211,8 @@ def test_calculate_impact_scores_coverage_gap():
 def test_calculate_impact_scores_with_package_prefix():
     """Test calculating impact scores with package prefix filter"""
     call_graph = CallGraph()
-    call_graph.add_function("package/module.py::func1", "package/module.py", 10)
-    call_graph.add_function("other/module.py::func2", "other/module.py", 20)
+    call_graph.add_function(FunctionMetadata("package/module.py::func1", "package/module.py", 10))
+    call_graph.add_function(FunctionMetadata("other/module.py::func2", "other/module.py", 20))
 
     coverage_data = {"files": {}}
 
@@ -229,9 +227,9 @@ def test_calculate_impact_scores_with_package_prefix():
 def test_calculate_impact_scores_sorting():
     """Test that impact scores are sorted by impact_score (highest first)"""
     call_graph = CallGraph()
-    call_graph.add_function("module.py::func1", "module.py", 10)
-    call_graph.add_function("module.py::func2", "module.py", 20)
-    call_graph.add_function("module.py::func3", "module.py", 30)
+    call_graph.add_function(FunctionMetadata("module.py::func1", "module.py", 10))
+    call_graph.add_function(FunctionMetadata("module.py::func2", "module.py", 20))
+    call_graph.add_function(FunctionMetadata("module.py::func3", "module.py", 30))
 
     coverage_data = {
         "files": {
@@ -262,13 +260,13 @@ def test_calculate_impact_scores_empty_call_graph():
     calculator = ImpactCalculator(call_graph, coverage_data)
     impact_scores = calculator.calculate_impact_scores()
 
-    assert impact_scores == []
+    assert not impact_scores
 
 
 def test_get_function_coverage_path_normalization():
     """Test that path separators are normalized"""
     call_graph = CallGraph()
-    call_graph.add_function("module.py::func1", "module\\py", 10)  # Windows path
+    call_graph.add_function(FunctionMetadata("module.py::func1", "module\\py", 10))  # Windows path
 
     coverage_data = {
         "files": {

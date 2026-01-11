@@ -28,8 +28,10 @@ def _get_model_path_from_ini(config: pytest.Config, project_root: Path) -> Optio
 
     return None
 
+    return None
 
-def _get_model_path_from_env(project_root: Path) -> Optional[Path]:
+
+def get_model_path_from_env(project_root: Path) -> Optional[Path]:
     """Get model path from environment variable
 
     Args:
@@ -45,7 +47,7 @@ def _get_model_path_from_env(project_root: Path) -> Optional[Path]:
     return None
 
 
-def _get_model_path_from_project_dir(project_root: Path) -> Optional[Path]:
+def get_model_path_from_project_dir(project_root: Path) -> Optional[Path]:
     """Get model path from project directory (user-trained model)
 
     Args:
@@ -65,7 +67,7 @@ def _get_model_path_from_project_dir(project_root: Path) -> Optional[Path]:
     return None
 
 
-def _get_default_bundled_model_path() -> Optional[Path]:
+def get_default_bundled_model_path() -> Optional[Path]:
     """Get default bundled model path from plugin directory
 
     Returns:
@@ -106,14 +108,14 @@ def get_model_path(config: pytest.Config, project_root: Path) -> Optional[Path]:
         return model_path
 
     # Priority 3: Environment variable
-    model_path = _get_model_path_from_env(project_root)
+    model_path = get_model_path_from_env(project_root)
     if model_path:
         return model_path
 
     # Priority 4: Project directory (user-trained model)
-    model_path = _get_model_path_from_project_dir(project_root)
+    model_path = get_model_path_from_project_dir(project_root)
     if model_path:
         return model_path
 
     # Priority 5: Plugin directory (default bundled model)
-    return _get_default_bundled_model_path()
+    return get_default_bundled_model_path()

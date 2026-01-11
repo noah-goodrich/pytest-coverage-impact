@@ -4,7 +4,8 @@ import ast
 from typing import Dict, List, Optional
 
 
-class FeatureExtractor:
+# JUSTIFICATION: Utility class with static methods
+class FeatureExtractor:  # pylint: disable=too-few-public-methods
     """Extract static code features from function AST nodes"""
 
     @staticmethod
@@ -26,32 +27,36 @@ class FeatureExtractor:
         features = {}
 
         # Size metrics
-        features["lines_of_code"] = FeatureExtractor._count_lines(func_node)
-        features["num_statements"] = FeatureExtractor._count_statements(func_node)
-        features["cyclomatic_complexity"] = FeatureExtractor._cyclomatic_complexity(func_node)
+        # Size metrics
+        features["lines_of_code"] = FeatureExtractor.count_lines(func_node)
+        features["num_statements"] = FeatureExtractor.count_statements(func_node)
+        features["cyclomatic_complexity"] = FeatureExtractor.cyclomatic_complexity(func_node)
         features["num_parameters"] = len(func_node.args.args)
         features["has_variadic_args"] = func_node.args.vararg is not None or func_node.args.kwarg is not None
 
         # Control flow complexity
-        features["num_branches"] = FeatureExtractor._count_branches(func_node)
-        features["num_loops"] = FeatureExtractor._count_loops(func_node)
-        features["num_exceptions"] = FeatureExtractor._count_exceptions(func_node)
-        features["num_returns"] = FeatureExtractor._count_returns(func_node)
+        # Control flow complexity
+        features["num_branches"] = FeatureExtractor.count_branches(func_node)
+        features["num_loops"] = FeatureExtractor.count_loops(func_node)
+        features["num_exceptions"] = FeatureExtractor.count_exceptions(func_node)
+        features["num_returns"] = FeatureExtractor.count_returns(func_node)
 
         # Dependency metrics
-        calls = FeatureExtractor._extract_function_calls(func_node)
+        # Dependency metrics
+        calls = FeatureExtractor.extract_function_calls(func_node)
         features["num_function_calls"] = len(calls)
         features["num_unique_calls"] = len(set(calls))
 
         # Type indicators
-        features["is_method"] = FeatureExtractor._is_method(func_node, module_tree)
+        # Type indicators
+        features["is_method"] = FeatureExtractor.is_method(func_node, module_tree)
         features["is_async"] = isinstance(func_node, ast.AsyncFunctionDef)
 
         # External interaction indicators
         if file_path:
-            features["uses_filesystem"] = FeatureExtractor._detect_filesystem_usage(func_node)
-            features["uses_network"] = FeatureExtractor._detect_network_usage(func_node)
-            features["uses_snowflake"] = FeatureExtractor._detect_snowflake_usage(func_node)
+            features["uses_filesystem"] = FeatureExtractor.detect_filesystem_usage(func_node)
+            features["uses_network"] = FeatureExtractor.detect_network_usage(func_node)
+            features["uses_snowflake"] = FeatureExtractor.detect_snowflake_usage(func_node)
         else:
             features["uses_filesystem"] = 0.0
             features["uses_network"] = 0.0
@@ -60,14 +65,14 @@ class FeatureExtractor:
         return features
 
     @staticmethod
-    def _count_lines(func_node: ast.FunctionDef) -> float:
+    def count_lines(func_node: ast.FunctionDef) -> float:
         """Count approximate lines of code in function"""
         if not func_node.body:
             return 1.0
         return float(func_node.end_lineno - func_node.lineno + 1)
 
     @staticmethod
-    def _count_statements(func_node: ast.FunctionDef) -> float:
+    def count_statements(func_node: ast.FunctionDef) -> float:
         """Count statements in function body"""
         count = 0
         for node in ast.walk(func_node):
@@ -90,7 +95,7 @@ class FeatureExtractor:
         return float(count)
 
     @staticmethod
-    def _cyclomatic_complexity(func_node: ast.FunctionDef) -> float:
+    def cyclomatic_complexity(func_node: ast.FunctionDef) -> float:
         """Calculate cyclomatic complexity"""
         complexity = 1  # Base complexity
 
@@ -105,7 +110,7 @@ class FeatureExtractor:
         return float(complexity)
 
     @staticmethod
-    def _count_branches(func_node: ast.FunctionDef) -> float:
+    def count_branches(func_node: ast.FunctionDef) -> float:
         """Count branch statements (if/elif/else)"""
         count = 0
         for node in ast.walk(func_node):
@@ -116,7 +121,7 @@ class FeatureExtractor:
         return float(count)
 
     @staticmethod
-    def _count_loops(func_node: ast.FunctionDef) -> float:
+    def count_loops(func_node: ast.FunctionDef) -> float:
         """Count loop statements"""
         count = 0
         for node in ast.walk(func_node):
@@ -125,7 +130,7 @@ class FeatureExtractor:
         return float(count)
 
     @staticmethod
-    def _count_exceptions(func_node: ast.FunctionDef) -> float:
+    def count_exceptions(func_node: ast.FunctionDef) -> float:
         """Count exception handlers"""
         count = 0
         for node in ast.walk(func_node):
@@ -134,7 +139,7 @@ class FeatureExtractor:
         return float(count)
 
     @staticmethod
-    def _count_returns(func_node: ast.FunctionDef) -> float:
+    def count_returns(func_node: ast.FunctionDef) -> float:
         """Count return statements"""
         count = 0
         for node in ast.walk(func_node):
@@ -143,7 +148,7 @@ class FeatureExtractor:
         return float(count)
 
     @staticmethod
-    def _extract_function_calls(func_node: ast.FunctionDef) -> List[str]:
+    def extract_function_calls(func_node: ast.FunctionDef) -> List[str]:
         """Extract function call names from function"""
         calls = []
 
@@ -158,7 +163,7 @@ class FeatureExtractor:
         return calls
 
     @staticmethod
-    def _is_method(func_node: ast.FunctionDef, module_tree: Optional[ast.AST]) -> float:
+    def is_method(func_node: ast.FunctionDef, module_tree: Optional[ast.AST]) -> float:
         """Check if function is a method (belongs to a class)"""
         if module_tree is None:
             return 0.0
@@ -172,7 +177,7 @@ class FeatureExtractor:
         return 0.0
 
     @staticmethod
-    def _detect_filesystem_usage(func_node: ast.FunctionDef) -> float:
+    def detect_filesystem_usage(func_node: ast.FunctionDef) -> float:
         """Detect filesystem access (open, Path, etc.)"""
         filesystem_keywords = {"open", "read", "write", "Path", "file", "filepath"}
 
@@ -188,7 +193,7 @@ class FeatureExtractor:
         return 0.0
 
     @staticmethod
-    def _detect_network_usage(func_node: ast.FunctionDef) -> float:
+    def detect_network_usage(func_node: ast.FunctionDef) -> float:
         """Detect network calls (requests, urllib, etc.)"""
         network_keywords = {"request", "get", "post", "urlopen", "fetch", "http"}
 
@@ -204,9 +209,9 @@ class FeatureExtractor:
         return 0.0
 
     @staticmethod
-    def _detect_snowflake_usage(func_node: ast.FunctionDef) -> float:
+    def detect_snowflake_usage(func_node: ast.FunctionDef) -> float:
         """Detect Snowflake/Snowpark API usage"""
-        snowflake_keywords = {"snowflake", "snowpark", "session", "snowpark"}
+        snowflake_keywords = {"snowflake", "snowpark", "session"}
 
         for node in ast.walk(func_node):
             if isinstance(node, ast.Call):

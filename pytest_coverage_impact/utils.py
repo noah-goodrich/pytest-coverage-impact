@@ -2,7 +2,7 @@
 
 import ast
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any, Match
 
 
 def resolve_path(path: Path, project_root: Path) -> Path:
@@ -34,11 +34,12 @@ def resolve_model_path_with_auto_detect(
     Returns:
         Path to model file, or None if not found
     """
+    # Lazy import to avoid circular dependency
+    from pytest_coverage_impact.ml.versioning import get_latest_version
+
     model_path = resolve_path(Path(path_str), project_root)
 
     if model_path.is_dir():
-        from pytest_coverage_impact.ml.versioning import get_latest_version
-
         latest = get_latest_version(model_path, prefix, suffix)
         if latest:
             return latest[1]
@@ -86,3 +87,41 @@ def parse_ast_tree(file_path: Path) -> Optional[ast.AST]:
         return ast.parse(content, filename=str(file_path))
     except (SyntaxError, UnicodeDecodeError, IOError):
         return None
+
+
+def ensure_parent_directory_exists(file_path: Path) -> None:
+    """Ensure the parent directory of a file exists
+
+    Args:
+        file_path: Path to file
+    """
+    parent = file_path.parent
+    parent.mkdir(parents=True, exist_ok=True)
+
+
+def extract_regex_group(match_obj: Optional[Match], group_index: int) -> Optional[str]:
+    """Extract a group from a match object safely
+
+    Args:
+        match_obj: Regex match object
+        group_index: Index of group to extract
+
+    Returns:
+        Group content or None
+    """
+    if match_obj:
+        return match_obj.group(group_index)
+    return None
+
+def extract_method_name_from_full_name(full_name: str) -> str:
+    """Extract method name from full function name
+
+    Args:
+        full_name: Full function name (e.g. "pkg.module::Class.method")
+
+    Returns:
+        Method name
+    """
+    # Use rsplit to split from the right
+    parts = full_name.rsplit(".", 1)
+    return parts[-1]

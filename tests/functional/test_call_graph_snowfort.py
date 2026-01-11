@@ -7,6 +7,7 @@ They should be excluded from normal unit/integration test runs.
 from pathlib import Path
 
 from pytest_coverage_impact.call_graph import build_call_graph
+from pytest_coverage_impact.impact_calculator import ImpactCalculator, load_coverage_data
 
 
 def test_build_call_graph_on_snowfort():
@@ -39,8 +40,6 @@ def test_build_call_graph_on_snowfort():
 
 def test_impact_calculation_on_snowfort():
     """Test impact calculation on snowfort codebase"""
-    from pytest_coverage_impact.call_graph import build_call_graph
-    from pytest_coverage_impact.impact_calculator import ImpactCalculator
 
     snowfort_path = Path("/development/snowfort/snowfort")
     coverage_file = Path("/development/snowfort/coverage.json")
@@ -53,8 +52,6 @@ def test_impact_calculation_on_snowfort():
     call_graph = build_call_graph(snowfort_path)
 
     # Load coverage data
-    from pytest_coverage_impact.impact_calculator import load_coverage_data
-
     coverage_data = load_coverage_data(coverage_file)
 
     # Calculate impact scores
@@ -74,4 +71,6 @@ def test_impact_calculation_on_snowfort():
 
     print(f"\n✅ Calculated impact scores for {len(impact_scores)} functions")
     if impact_scores:
-        print(f"   Top function: {impact_scores[0]['function']} (impact={impact_scores[0]['impact_score']:.2f})")
+        top_func = impact_scores[0]["function"]
+        top_impact = impact_scores[0]["impact_score"]
+        print(f"   Top function: {top_func} (impact={top_impact:.2f})")

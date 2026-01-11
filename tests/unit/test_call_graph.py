@@ -6,6 +6,7 @@ from pytest_coverage_impact.call_graph import (
     CallGraph,
     CallGraphVisitor,
     find_python_files,
+    FunctionMetadata,
 )
 
 
@@ -18,7 +19,8 @@ def test_call_graph_initialization():
 def test_call_graph_add_function():
     """Test adding functions to call graph"""
     graph = CallGraph()
-    graph.add_function("module.py::func1", "module.py", 10)
+    metadata = FunctionMetadata(full_name="module.py::func1", file_path="module.py", line=10)
+    graph.add_function(metadata)
 
     assert "module.py::func1" in graph.graph
     assert graph.graph["module.py::func1"]["file"] == "module.py"
@@ -28,8 +30,8 @@ def test_call_graph_add_function():
 def test_call_graph_add_call():
     """Test adding call relationships"""
     graph = CallGraph()
-    graph.add_function("module.py::caller", "module.py", 10)
-    graph.add_function("module.py::callee", "module.py", 20)
+    graph.add_function(FunctionMetadata("module.py::caller", "module.py", 10))
+    graph.add_function(FunctionMetadata("module.py::callee", "module.py", 20))
     graph.add_call("module.py::caller", "module.py::callee")
 
     assert "module.py::callee" in graph.graph["module.py::caller"]["calls"]
@@ -41,9 +43,9 @@ def test_call_graph_get_impact():
     graph = CallGraph()
 
     # Create a simple call chain: func1 -> func2 -> func3
-    graph.add_function("module.py::func1", "module.py", 10)
-    graph.add_function("module.py::func2", "module.py", 20)
-    graph.add_function("module.py::func3", "module.py", 30)
+    graph.add_function(FunctionMetadata("module.py::func1", "module.py", 10))
+    graph.add_function(FunctionMetadata("module.py::func2", "module.py", 20))
+    graph.add_function(FunctionMetadata("module.py::func3", "module.py", 30))
 
     graph.add_call("module.py::func1", "module.py::func2")
     graph.add_call("module.py::func2", "module.py::func3")

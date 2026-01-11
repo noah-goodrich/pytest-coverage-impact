@@ -11,7 +11,8 @@ from pytest_coverage_impact.reporters import JSONReporter, TerminalReporter
 
 def test_terminal_reporter_empty_list():
     """Test terminal reporter with empty impact scores"""
-    console = Console(file=open("/dev/null", "w"))  # Suppress output
+    # JUSTIFICATION: Suppress output for testing, GC handles close
+    console = Console(file=open("/dev/null", "w", encoding="utf-8"))  # pylint: disable=consider-using-with
     reporter = TerminalReporter(console)
 
     reporter.generate_report([], top_n=10)
@@ -22,7 +23,8 @@ def test_terminal_reporter_empty_list():
 
 def test_terminal_reporter_basic():
     """Test terminal reporter with basic data"""
-    console = Console(file=open("/dev/null", "w"))  # Suppress output
+    # JUSTIFICATION: Suppress output for testing, GC handles close
+    console = Console(file=open("/dev/null", "w", encoding="utf-8"))  # pylint: disable=consider-using-with
     reporter = TerminalReporter(console)
 
     impact_scores = [
@@ -45,7 +47,8 @@ def test_terminal_reporter_basic():
 
 def test_terminal_reporter_with_confidence():
     """Test terminal reporter with confidence intervals"""
-    console = Console(file=open("/dev/null", "w"))  # Suppress output
+    # JUSTIFICATION: Suppress output for testing, GC handles close
+    console = Console(file=open("/dev/null", "w", encoding="utf-8"))  # pylint: disable=consider-using-with
     reporter = TerminalReporter(console)
 
     impact_scores = [
@@ -69,7 +72,8 @@ def test_terminal_reporter_with_confidence():
 
 def test_terminal_reporter_top_n_limit():
     """Test terminal reporter limits to top_n"""
-    console = Console(file=open("/dev/null", "w"))  # Suppress output
+    # JUSTIFICATION: Suppress output for testing, GC handles close
+    console = Console(file=open("/dev/null", "w", encoding="utf-8"))  # pylint: disable=consider-using-with
     reporter = TerminalReporter(console)
 
     impact_scores = [
@@ -93,7 +97,8 @@ def test_terminal_reporter_top_n_limit():
 
 def test_terminal_reporter_long_file_path():
     """Test terminal reporter with long file paths (truncation)"""
-    console = Console(file=open("/dev/null", "w"))  # Suppress output
+    # JUSTIFICATION: Suppress output for testing, GC handles close
+    console = Console(file=open("/dev/null", "w", encoding="utf-8"))  # pylint: disable=consider-using-with
     reporter = TerminalReporter(console)
 
     long_path = "/very/long/path/to/the/module/file/that/exceeds/limit.py"
@@ -117,7 +122,8 @@ def test_terminal_reporter_long_file_path():
 
 def test_terminal_reporter_long_function_name():
     """Test terminal reporter with long function names (truncation)"""
-    console = Console(file=open("/dev/null", "w"))  # Suppress output
+    # JUSTIFICATION: Suppress output for testing, GC handles close
+    console = Console(file=open("/dev/null", "w", encoding="utf-8"))  # pylint: disable=consider-using-with
     reporter = TerminalReporter(console)
 
     long_func = "very_long_function_name_that_exceeds_the_display_limit_should_be_truncated"
@@ -141,7 +147,8 @@ def test_terminal_reporter_long_function_name():
 
 def test_terminal_reporter_function_name_with_colons():
     """Test terminal reporter with function names containing ::"""
-    console = Console(file=open("/dev/null", "w"))  # Suppress output
+    # JUSTIFICATION: Suppress output for testing, GC handles close
+    console = Console(file=open("/dev/null", "w", encoding="utf-8"))  # pylint: disable=consider-using-with
     reporter = TerminalReporter(console)
 
     impact_scores = [
@@ -164,7 +171,8 @@ def test_terminal_reporter_function_name_with_colons():
 
 def test_terminal_reporter_missing_coverage_percentage():
     """Test terminal reporter handles missing coverage_percentage"""
-    console = Console(file=open("/dev/null", "w"))  # Suppress output
+    # JUSTIFICATION: Suppress output for testing, GC handles close
+    console = Console(file=open("/dev/null", "w", encoding="utf-8"))  # pylint: disable=consider-using-with
     reporter = TerminalReporter(console)
 
     impact_scores = [
@@ -202,7 +210,7 @@ def test_json_reporter_basic():
 
         assert output_path.exists()
 
-        with open(output_path, "r") as f:
+        with open(output_path, "r", encoding="utf-8") as f:
             report = json.load(f)
 
         assert report["version"] == "1.0"
@@ -220,7 +228,7 @@ def test_json_reporter_empty_list():
 
         assert output_path.exists()
 
-        with open(output_path, "r") as f:
+        with open(output_path, "r", encoding="utf-8") as f:
             report = json.load(f)
 
         assert report["total_functions"] == 0
@@ -246,7 +254,7 @@ def test_json_reporter_multiple_functions():
 
         assert output_path.exists()
 
-        with open(output_path, "r") as f:
+        with open(output_path, "r", encoding="utf-8") as f:
             report = json.load(f)
 
         assert report["total_functions"] == 5
@@ -278,7 +286,7 @@ def test_json_reporter_complex_data():
 
         assert output_path.exists()
 
-        with open(output_path, "r") as f:
+        with open(output_path, "r", encoding="utf-8") as f:
             report = json.load(f)
 
         assert report["functions"][0]["function"] == "module.py::ClassName::method"

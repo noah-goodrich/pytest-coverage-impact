@@ -10,6 +10,37 @@ from pytest_coverage_impact.analyzer import CoverageImpactAnalyzer
 from pytest_coverage_impact.call_graph import CallGraph
 
 
+@pytest.fixture
+def temp_project(tmp_path):
+    """Create a temporary project structure"""
+    project_root = tmp_path / "test_project"
+    project_root.mkdir()
+
+    # Create source directory with Python files
+    source_dir = project_root / "src"
+    source_dir.mkdir()
+
+    # Create a simple Python module
+    module_file = source_dir / "module.py"
+    module_file.write_text("def hello():\n    return 'world'\n\ndef goodbye():\n    return 'bye'\n")
+
+    # Create coverage.json
+    coverage_file = project_root / "coverage.json"
+    coverage_data = {
+        "files": {
+            "src/module.py": {
+                "summary": {"covered_lines": 2, "num_statements": 4, "percent_covered": 50.0},
+                "excluded_lines": [],
+                "missing_lines": [3],
+                "executed_lines": [1, 2],
+            }
+        }
+    }
+    coverage_file.write_text(json.dumps(coverage_data))
+
+    return project_root, source_dir, coverage_file
+
+
 def test_analyzer_init_with_source_dir():
     """Test analyzer initialization with explicit source directory"""
     project_root = Path("/project")
@@ -73,7 +104,7 @@ def test_analyze_no_functions_found(tmp_path):
         analyzer.analyze(coverage_file)
 
 
-def test_analyze_success(temp_project):
+def test_analyze_success(temp_project):  # pylint: disable=redefined-outer-name
     """Test successful analysis"""
     project_root, source_dir, coverage_file = temp_project
 
@@ -93,7 +124,7 @@ def test_analyze_success(temp_project):
     assert isinstance(results["prioritized"], list)
 
 
-def test_analyze_with_model_path(temp_project, tmp_path):
+def test_analyze_with_model_path(temp_project, tmp_path):  # pylint: disable=redefined-outer-name
     """Test analysis with explicit model path"""
     project_root, source_dir, coverage_file = temp_project
 
@@ -153,52 +184,53 @@ def test_get_model_path_from_env_var(tmp_path, monkeypatch):
     assert result == model_file.resolve()
 
 
-def test_estimate_complexities_no_model(temp_project):
-    """Test complexity estimation without a model using public API"""
+def test_estimate_complexities_no_model(temp_project):  # pylint: disable=redefined-outer-name
+    """Test _estimate_complexities without a model"""
     project_root, source_dir, coverage_file = temp_project
 
     analyzer = CoverageImpactAnalyzer(project_root, source_dir)
-
-    # Pass a nonexistent model path to ensure fallback logic is used
-    nonexistent_path = project_root / "nonexistent_model.pkl"
-    results = analyzer.analyze(coverage_file, model_path=nonexistent_path)
-
-    # Complexity scores should still be populated (using fallback heuristic)
-    # The previous test asserted they were empty because it called _estimate_complexities directl
-    # with a bad path. But analyze() handles fallbacks.
-    # Actually, analyze() calls _estimate_complexities.
-    # Check if results["complexity_scores"] is populated.
-    assert results["complexity_scores"]
-    # Confidence scores should be empty since we are using fallback
-    assert not results["confidence_scores"]
-
-
-def test_estimate_function_complexity_file_not_found(temp_project):
-    """Test analysis triggers simple fallback when file not found (public API)"""
-    project_root, source_dir, _ = temp_project
-
-    # Create coverage data referencing a non-existent file
-    coverage_file = project_root / "coverage.json"
-    coverage_data = {
-        "files": {
-            "src/nonexistent.py": {  # File doesn't exist on disk
-                "summary": {"covered_lines": 0, "num_statements": 0, "percent_covered": 0.0},
-                "executed_lines": [],
-                "missing_lines": [],
-            }
-        }
-    }
-    coverage_file.write_text(json.dumps(coverage_data))
-
-    analyzer = CoverageImpactAnalyzer(project_root, source_dir)
-
-    # This should not raise an error, just skip the file or return default complexity
     results = analyzer.analyze(coverage_file)
 
-    # The nonexistent file should probably have a complexity score (fallback) or be skipped
-    # Depending on implementation.
-    # Let's assert it runs without error first.
-    assert "complexity_scores" in results
+    impact_scores = results["impact_scores"]
+    # Pass a nonexistent model path to ensure no model is used
+    nonexistent_path = project_root / "nonexistent_model.pkl"
+    # JUSTIFICATION: White-box testing of private component internals required for coverage
+    # pylint: disable=protected-access,clean-arch-visibility,private-method-test
+    complexity_scores, confidence_scores = analyzer._estimate_complexities(impact_scores, model_path=nonexistent_path)
+
+    # Should return empty dicts when no model is available
+    assert not complexity_scores
+    assert not confidence_scores
+
+
+def test_estimate_function_complexity_file_not_found(temp_project):  # pylint: disable=redefined-outer-name
+    """Test _estimate_function_complexity with nonexistent file"""
+    project_root, source_dir, _ = temp_project
+
+    analyzer = CoverageImpactAnalyzer(project_root, source_dir)
+    mock_estimator = Mock()
+
+    # JUSTIFICATION: White-box testing of private component internals required for coverage
+    # pylint: disable=protected-access,clean-arch-visibility,private-method-test
+    result = analyzer._estimate_function_complexity(mock_estimator, Path("/nonexistent/file.py"), 1, "test::function")
+
+    assert result == (None, None, None)
+
+
+def test_estimate_function_complexity_function_not_found(temp_project):  # pylint: disable=redefined-outer-name
+    """Test _estimate_function_complexity when function doesn't exist at line"""
+    project_root, source_dir, _ = temp_project
+
+    module_file = source_dir / "module.py"
+    analyzer = CoverageImpactAnalyzer(project_root, source_dir)
+    mock_estimator = Mock()
+
+    # Try to find function at line 99 (doesn't exist)
+    # JUSTIFICATION: White-box testing of private component internals required for coverage
+    # pylint: disable=protected-access,private-method-test,clean-arch-visibility
+    result = analyzer._estimate_function_complexity(mock_estimator, module_file, 99, "test::function")
+
+    assert result == (None, None, None)
 
 
 def test_find_source_directory_priority_order(tmp_path):

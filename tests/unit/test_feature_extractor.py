@@ -225,7 +225,7 @@ def test_extract_features_filesystem_usage():
     """Test detecting filesystem usage"""
     code = """
 def func_with_filesystem():
-    with open("file.txt") as f:
+    with open("file.txt", encoding="utf-8") as f:
         return f.read()
 """
     tree = ast.parse(code)
@@ -254,7 +254,7 @@ def test_extract_features_filesystem_no_file_path():
     """Test that filesystem detection defaults to 0 when no file_path"""
     code = """
 def func_with_filesystem():
-    with open("file.txt") as f:
+    with open("file.txt", encoding="utf-8") as f:
         return f.read()
 """
     tree = ast.parse(code)
@@ -308,7 +308,7 @@ def multi_line_func():
     tree = ast.parse(code)
     func_node = tree.body[0]
 
-    lines = FeatureExtractor._count_lines(func_node)
+    lines = FeatureExtractor.count_lines(func_node)
 
     assert lines >= 4.0
 
@@ -322,7 +322,7 @@ def empty_func():
     tree = ast.parse(code)
     func_node = tree.body[0]
 
-    lines = FeatureExtractor._count_lines(func_node)
+    lines = FeatureExtractor.count_lines(func_node)
 
     assert lines >= 1.0
 
@@ -339,7 +339,7 @@ def func_with_statements():
     tree = ast.parse(code)
     func_node = tree.body[0]
 
-    statements = FeatureExtractor._count_statements(func_node)
+    statements = FeatureExtractor.count_statements(func_node)
 
     assert statements >= 3.0
 
@@ -358,7 +358,7 @@ def complex_func(x, y):
     tree = ast.parse(code)
     func_node = tree.body[0]
 
-    complexity = FeatureExtractor._cyclomatic_complexity(func_node)
+    complexity = FeatureExtractor.cyclomatic_complexity(func_node)
 
     assert complexity >= 3.0  # Base + 2 ifs + 1 elif
 
@@ -377,7 +377,7 @@ def func_with_branches(x):
     tree = ast.parse(code)
     func_node = tree.body[0]
 
-    branches = FeatureExtractor._count_branches(func_node)
+    branches = FeatureExtractor.count_branches(func_node)
 
     assert branches > 0
 
@@ -393,7 +393,7 @@ def func_with_loops(items):
     tree = ast.parse(code)
     func_node = tree.body[0]
 
-    loops = FeatureExtractor._count_loops(func_node)
+    loops = FeatureExtractor.count_loops(func_node)
 
     assert loops == 2.0
 
@@ -412,7 +412,7 @@ def func_with_exceptions():
     tree = ast.parse(code)
     func_node = tree.body[0]
 
-    exceptions = FeatureExtractor._count_exceptions(func_node)
+    exceptions = FeatureExtractor.count_exceptions(func_node)
 
     assert exceptions == 2.0
 
@@ -428,7 +428,7 @@ def func_with_returns(x):
     tree = ast.parse(code)
     func_node = tree.body[0]
 
-    returns = FeatureExtractor._count_returns(func_node)
+    returns = FeatureExtractor.count_returns(func_node)
 
     assert returns == 2.0
 
@@ -444,7 +444,7 @@ def func_with_calls():
     tree = ast.parse(code)
     func_node = tree.body[0]
 
-    calls = FeatureExtractor._extract_function_calls(func_node)
+    calls = FeatureExtractor.extract_function_calls(func_node)
 
     assert len(calls) >= 2  # helper() and obj.method()
 
@@ -460,7 +460,7 @@ class MyClass:
     class_node = tree.body[0]
     func_node = class_node.body[0]
 
-    is_method = FeatureExtractor._is_method(func_node, tree)
+    is_method = FeatureExtractor.is_method(func_node, tree)
 
     assert is_method == 1.0
 
@@ -474,7 +474,7 @@ def standalone_func():
     tree = ast.parse(code)
     func_node = tree.body[0]
 
-    is_method = FeatureExtractor._is_method(func_node, tree)
+    is_method = FeatureExtractor.is_method(func_node, tree)
 
     assert is_method == 0.0
 
@@ -483,14 +483,14 @@ def test_detect_filesystem_usage():
     """Test filesystem usage detection"""
     code = """
 def func():
-    with open("file.txt") as f:
+    with open("file.txt", encoding="utf-8") as f:
         data = f.read()
     return Path("dir")
 """
     tree = ast.parse(code)
     func_node = tree.body[0]
 
-    uses_fs = FeatureExtractor._detect_filesystem_usage(func_node)
+    uses_fs = FeatureExtractor.detect_filesystem_usage(func_node)
 
     assert uses_fs == 1.0
 
@@ -505,7 +505,7 @@ def func():
     tree = ast.parse(code)
     func_node = tree.body[0]
 
-    uses_net = FeatureExtractor._detect_network_usage(func_node)
+    uses_net = FeatureExtractor.detect_network_usage(func_node)
 
     assert uses_net == 1.0
 
@@ -520,6 +520,6 @@ def func():
     tree = ast.parse(code)
     func_node = tree.body[0]
 
-    uses_sf = FeatureExtractor._detect_snowflake_usage(func_node)
+    uses_sf = FeatureExtractor.detect_snowflake_usage(func_node)
 
     assert uses_sf == 1.0

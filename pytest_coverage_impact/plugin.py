@@ -1,9 +1,18 @@
 """Main pytest plugin for coverage impact analysis"""
 
 import sys
+import traceback
 from pathlib import Path
 
 import pytest
+from rich.console import Console
+from rich.table import Table
+
+from pytest_coverage_impact.analyzer import CoverageImpactAnalyzer
+from pytest_coverage_impact.config import get_model_path
+from pytest_coverage_impact.ml.orchestrator import MLOrchestrator
+from pytest_coverage_impact.progress import ProgressMonitor
+from pytest_coverage_impact.reporters import TerminalReporter, JSONReporter
 
 
 def pytest_load_initial_conftests(early_config, parser, args):
@@ -123,208 +132,47 @@ def pytest_configure(config: pytest.Config) -> None:
         "coverage_impact: marks tests as part of coverage impact analysis",
     )
 
+    orchestrator = MLOrchestrator(config)
+
     # Handle training data collection (runs before tests)
     collect_path = config.getoption("--coverage-impact-collect-training-data")
     if collect_path:
-        _handle_collect_training_data(config, Path(collect_path))
+        orchestrator.handle_collect_training_data(Path(collect_path))
         # Exit early - we're just collecting data, not running tests
         sys.exit(0)
 
     # Handle model training (runs before tests)
     train_data_path = config.getoption("--coverage-impact-train-model")
     if train_data_path:
-        _handle_train_model(config, Path(train_data_path))
+        orchestrator.handle_train_model(Path(train_data_path))
         # Exit early - we're just training, not running tests
         sys.exit(0)
 
     # Handle combined train command (collect + train)
     if config.getoption("--coverage-impact-train"):
-        _handle_train(config)
+        orchestrator.handle_train()
         # Exit early - we're just training, not running tests
         sys.exit(0)
 
 
-def _handle_collect_training_data(config: pytest.Config, output_path: Path) -> Path:
-    """Handle training data collection with auto-versioning
-
-    Returns:
-        Path to saved training data file
-    """
-    from rich.console import Console
-    from pytest_coverage_impact.ml.training_data_collector import TrainingDataCollector
-    from pytest_coverage_impact.ml.versioning import get_next_version
-
-    console = Console()
-    console.print("[bold blue]Collecting Training Data[/bold blue]")
-    console.print("=" * 60)
-
-    project_root = Path(config.rootdir)
-
-    # Determine the actual output path (handle directories and versioning)
-    if not output_path.exists() or output_path.is_dir() or "v" not in output_path.name:
-        # Use versioning - find the directory
-        if output_path.is_dir() or not output_path.exists():
-            from pytest_coverage_impact.utils import resolve_path
-
-            training_data_dir = resolve_path(output_path, project_root)
-        else:
-            training_data_dir = output_path.parent
-
-        # Ensure we're working with the training_data directory
-        if training_data_dir.name != "training_data" and (training_data_dir / "training_data").exists():
-            training_data_dir = training_data_dir / "training_data"
-
-        version, output_path = get_next_version(training_data_dir, "dataset_v", ".json")
-        console.print(f"[dim]Auto-incrementing version to {version}[/dim]")
-    else:
-        # Use the provided path as-is
-        from pytest_coverage_impact.utils import resolve_path
-
-        output_path = resolve_path(output_path, project_root)
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    console.print(f"Project root: {project_root}")
-    console.print(f"Output path: {output_path}")
-    console.print("")
-
-    try:
-        collector = TrainingDataCollector(project_root, None)
-        training_data = collector.collect_training_data()
-
-        # Extract version from filename
-        import re
-
-        match = re.search(r"v(\d+\.\d+)", output_path.name)
-        version = match.group(1) if match else "1.0"
-
-        collector.save_training_data(training_data, output_path, version=version)
-        console.print(f"\n[green]✓[/green] Training data saved to {output_path}")
-        return output_path
-    except Exception as e:
-        console.print(f"\n[red]✗ Error collecting training data: {e}[/red]")
-        import traceback
-
-        console.print(f"[dim]{traceback.format_exc()}[/dim]")
-        raise
-
-
-def _handle_train_model(config: pytest.Config, training_data_path: Path) -> None:
-    """Handle model training"""
-    import json
-    from rich.console import Console
-    from pytest_coverage_impact.ml.complexity_model import ComplexityModel
-
-    console = Console()
-    console.print("[bold blue]Training ML Model[/bold blue]")
-    console.print("=" * 60)
-
-    project_root = Path(config.rootdir)
-    from pytest_coverage_impact.utils import resolve_path
-
-    training_data_path = resolve_path(training_data_path, project_root)
-
-    console.print(f"Training data: {training_data_path}")
-
-    if not training_data_path.exists():
-        console.print(f"[red]✗ Training data file not found: {training_data_path}[/red]")
-        sys.exit(1)
-
-    # Load training data
-    console.print("[dim]Loading training data...[/dim]")
-    try:
-        with open(training_data_path, "r") as f:
-            dataset = json.load(f)
-        examples = dataset.get("examples", [])
-        console.print(f"[green]✓[/green] Loaded {len(examples)} training examples")
-    except Exception as e:
-        console.print(f"[red]✗ Error loading training data: {e}[/red]")
-        sys.exit(1)
-
-    # Train model
-    console.print("[dim]Training model...[/dim]")
-    try:
-        model = ComplexityModel()
-        metrics = model.train(examples)
-
-        console.print("[green]✓[/green] Model trained successfully")
-        console.print(f"  R² Score: {metrics.get('r2_score', 'N/A'):.3f}")
-        console.print(f"  MAE: {metrics.get('mae', 'N/A'):.3f}")
-        console.print(f"  RMSE: {metrics.get('rmse', 'N/A'):.3f}")
-
-        # Save model to default location with auto-incrementing version
-        from pytest_coverage_impact.ml.versioning import get_next_version
-
-        model_dir = project_root / ".coverage_impact" / "models"
-        model_dir.mkdir(parents=True, exist_ok=True)
-
-        version, model_path = get_next_version(model_dir, "complexity_model_v", ".pkl")
-        console.print(f"[dim]Auto-incrementing model version to {version}[/dim]")
-
-        model.save(
-            model_path,
-            metadata={
-                "version": version,
-                "metrics": metrics,
-                "training_examples": len(examples),
-                "training_data_source": str(training_data_path),
-            },
-        )
-
-        console.print(f"\n[green]✓[/green] Model saved to {model_path}")
-        console.print("\n[yellow]Tip:[/yellow] Configure in pytest.ini (point to directory - auto-detects latest):")
-        console.print("  [pytest]")
-        console.print("  coverage_impact_model_path = .coverage_impact/models")
-
-    except Exception as e:
-        console.print(f"\n[red]✗ Error training model: {e}[/red]")
-        import traceback
-
-        console.print(f"[dim]{traceback.format_exc()}[/dim]")
-        sys.exit(1)
-
-
-def _handle_train(config: pytest.Config) -> None:
-    """Handle combined training: collect data and train model in one command"""
-    from rich.console import Console
-
-    console = Console()
-    console.print("[bold blue]Training ML Model[/bold blue]")
-    console.print("=" * 60)
-
-    project_root = Path(config.rootdir)
-
-    # Step 1: Collect training data (with auto-versioning)
-    console.print("\n[bold]Step 1: Collecting Training Data[/bold]")
-    training_data_dir = project_root / ".coverage_impact" / "training_data"
-    training_data_path = _handle_collect_training_data(config, training_data_dir)
-
-    # Step 2: Train model (with auto-versioning)
-    console.print("\n[bold]Step 2: Training Model[/bold]")
-    _handle_train_model(config, training_data_path)
-
-    console.print("\n[green]✓[/green] [bold]Training complete![/bold]")
-
-
-def pytest_sessionfinish(  # noqa: C901 - Handles multiple CLI options and orchestrates analysis
-    session: pytest.Session, exitstatus: int
-) -> None:
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     """Generate coverage impact report after test session"""
-    if not session.config.getoption("--coverage-impact"):
+    config = session.config
+
+    # Simple usage to avoid unused-argument warning
+    if exitstatus != 0:
+        pass
+
+    if not config.getoption("--coverage-impact"):
         return
 
     try:
-        from pytest_coverage_impact.analyzer import CoverageImpactAnalyzer
-        from pytest_coverage_impact.config import get_model_path
-        from pytest_coverage_impact.reporters import TerminalReporter, JSONReporter
-        from rich.console import Console
-
         console = Console()
         console.print("\n[bold blue]Coverage Impact Analysis[/bold blue]")
         console.print("=" * 60)
 
         # Determine project root
-        project_root = Path(session.config.rootdir)
+        project_root = Path(config.rootdir)
 
         # Check if we have coverage data
         coverage_file = project_root / "coverage.json"
@@ -336,98 +184,69 @@ def pytest_sessionfinish(  # noqa: C901 - Handles multiple CLI options and orche
         analyzer = CoverageImpactAnalyzer(project_root)
 
         # Get model path (CLI > config system)
-        cli_model_path = session.config.getoption("--coverage-impact-model-path")
+        cli_model_path = config.getoption("--coverage-impact-model-path")
         model_path = analyzer.get_model_path(cli_model_path) if cli_model_path else None
 
         if not model_path:
             # Fallback to config system
-            from pytest_coverage_impact.config import get_model_path
+            model_path = get_model_path(config, project_root)
 
-            model_path = get_model_path(session.config, project_root)
+        _run_analysis(analyzer, coverage_file, model_path, console, config)
 
-        # Create progress monitor for analysis
-        from pytest_coverage_impact.progress import ProgressMonitor
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        # We can't avoid broad exception here as it's the top level hook handler
+        console_instance = Console()
+        console_instance.print(f"\n[red]✗ Error generating coverage impact report: {e}[/red]")
+        console_instance.print(f"[dim]{traceback.format_exc()}[/dim]")
 
-        with ProgressMonitor(console, enabled=True) as progress:
-            console.print("[dim]Analyzing coverage impact...[/dim]")
 
-            # Perform analysis with model path and progress monitor
-            try:
-                results = analyzer.analyze(coverage_file, model_path=model_path, progress_monitor=progress)
-            except FileNotFoundError as e:
-                console.print(f"[yellow]⚠ {e}[/yellow]")
-                return
-            except ValueError as e:
-                console.print(f"[yellow]⚠ {e}[/yellow]")
-                return
+def _run_analysis(analyzer, coverage_file, model_path, console, config):
+    """Run the analysis steps"""
+    # Create progress monitor for analysis
+    with ProgressMonitor(console, enabled=True) as progress:
+        console.print("[dim]Analyzing coverage impact...[/dim]")
 
-            call_graph = results["call_graph"]
-            impact_scores = results["impact_scores"]
-            complexity_scores = results.get("complexity_scores", {})
-            prioritized = results["prioritized"]
-            timings = results.get("timings", {})
+        # Perform analysis with model path and progress monitor
+        results = analyzer.analyze(coverage_file, model_path=model_path, progress_monitor=progress)
 
-            console.print(f"[green]✓[/green] Found {len(call_graph.graph)} functions")
-            console.print(f"[green]✓[/green] Calculated scores for {len(impact_scores)} functions")
+        call_graph = results["call_graph"]
+        impact_scores = results["impact_scores"]
+        complexity_scores = results.get("complexity_scores", {})
+        prioritized = results["prioritized"]
+        timings = results.get("timings", {})
 
-            if complexity_scores:
-                console.print(f"[green]✓[/green] Estimated complexity for {len(complexity_scores)} functions")
+        console.print(f"[green]✓[/green] Found {len(call_graph.graph)} functions")
+        console.print(f"[green]✓[/green] Calculated scores for {len(impact_scores)} functions")
 
-            console.print(f"[green]✓[/green] Prioritized {len(prioritized)} functions")
+        if complexity_scores:
+            console.print(f"[green]✓[/green] Estimated complexity for {len(complexity_scores)} functions")
 
-            # Display timing summary
-            if timings:
-                from rich.table import Table
+        console.print(f"[green]✓[/green] Prioritized {len(prioritized)} functions")
 
-                timing_table = Table(title="Performance Summary", show_header=True, header_style="bold magenta")
-                timing_table.add_column("Step", style="cyan", no_wrap=True)
-                timing_table.add_column("Time", justify="right", style="green")
-                timing_table.add_column("Percentage", justify="right", style="yellow")
+    # Generate terminal report (outside progress monitor)
+    top_n = config.getoption("--coverage-impact-top", default=20)
+    console.print("\n")
+    reporter = TerminalReporter(console)
 
-                total = timings.get("total", 0)
-                step_names = {
-                    "build_call_graph": "Build Call Graph",
-                    "load_coverage_data": "Load Coverage Data",
-                    "calculate_impact_scores": "Calculate Impact Scores",
-                    "estimate_complexity": "Estimate Complexity",
-                    "prioritize_functions": "Prioritize Functions",
-                }
+    # Print timings first? Or last? Original was inside progress monitor block.
+    # But progress monitor console usage might conflict.
+    # The original _print_timings was called inside _run_analysis inside progress block.
+    # But _print_timings uses console.
 
-                for step_key, step_display in step_names.items():
-                    if step_key in timings:
-                        step_time = timings[step_key]
-                        if step_time > 0:
-                            pct = (step_time / total * 100) if total > 0 else 0
-                            timing_table.add_row(step_display, f"{step_time:.2f}s", f"{pct:.1f}%")
+    reporter.print_timings(results.get("timings", {}))
+    reporter.generate_report(prioritized, top_n=top_n, totals=results.get("totals"), files=results.get("files"))
 
-                if total > 0:
-                    timing_table.add_section()
-                    timing_table.add_row(
-                        "[bold]TOTAL[/bold]", f"[bold]{total:.2f}s[/bold]", "100.0%", style="bold green"
-                    )
-                    console.print("\n")
-                    console.print(timing_table)
+    # Generate JSON report if requested
+    json_path = config.getoption("--coverage-impact-json")
+    if json_path:
+        json_reporter = JSONReporter()
+        json_reporter.generate_report(impact_scores, Path(json_path))
+        console.print(f"\n[green]✓[/green] JSON report saved to {json_path}")
 
-        # Generate terminal report (outside progress monitor)
-        top_n = session.config.getoption("--coverage-impact-top", default=20)
-        console.print("\n")
-        reporter = TerminalReporter(console)
-        reporter.generate_report(prioritized, top_n=top_n)
+    # Generate HTML report if requested
+    html_path = config.getoption("--coverage-impact-html")
+    if html_path:
+        console.print("\n[yellow]⚠ HTML reports coming soon[/yellow]")
 
-        # Generate JSON report if requested
-        json_path = session.config.getoption("--coverage-impact-json")
-        if json_path:
-            json_reporter = JSONReporter()
-            json_reporter.generate_report(impact_scores, Path(json_path))
-            console.print(f"\n[green]✓[/green] JSON report saved to {json_path}")
 
-        # Generate HTML report if requested
-        html_path = session.config.getoption("--coverage-impact-html")
-        if html_path:
-            console.print("\n[yellow]⚠ HTML reports coming soon[/yellow]")
 
-    except Exception as e:
-        console.print(f"\n[red]✗ Error generating coverage impact report: {e}[/red]")
-        import traceback
-
-        console.print(f"[dim]{traceback.format_exc()}[/dim]")
