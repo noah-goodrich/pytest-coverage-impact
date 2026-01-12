@@ -5,7 +5,7 @@ This project adheres to **Clean Architecture** principles enforced by the `pylin
 ## Layer Boundaries
 
 The project is structured into strict layers.
-Inner layers (Domain, Pytest_coverage_impact (UseCase)) **MUST NOT** import from Outer layers (Ml (Infrastructure), Interface).
+Inner layers (Domain, Pytest_coverage_impact (UseCase)) **MUST NOT** import from Outer layers (Infrastructure, Interface).
 
 ### 1. Domain Layer
 *   **Purpose**: Contains pure business logic, entities, and protocols (interfaces).
@@ -27,7 +27,7 @@ Inner layers (Domain, Pytest_coverage_impact (UseCase)) **MUST NOT** import from
 *   **Rules**:
     *   Convert external data (JSON, Args) into Domain objects before passing to UseCases.
 
-### 4. Ml (Infrastructure) Layer (Gateways/Repositories)
+### 4. Infrastructure Layer (Gateways/Repositories)
 *   **Purpose**: Implements Domain Protocols to interact with the outside world (DB, API, Storage).
 *   **Rules**:
     *   Must implement a Protocol defined in the Domain layer.

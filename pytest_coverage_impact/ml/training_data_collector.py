@@ -6,10 +6,10 @@ import re  # Moved to top
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from pytest_coverage_impact.call_graph import build_call_graph, CallGraph
+from pytest_coverage_impact.gateways.call_graph import build_call_graph, CallGraph
 from pytest_coverage_impact.ml.feature_extractor import FeatureExtractor
 from pytest_coverage_impact.ml.test_analyzer import TestAnalyzer
-from pytest_coverage_impact.utils import (
+from pytest_coverage_impact.gateways.utils import (
     parse_ast_tree,
     find_function_node_by_line,
 )  # Moved to top

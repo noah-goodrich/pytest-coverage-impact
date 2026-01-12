@@ -1,26 +1,37 @@
-"""Orchestrator for ML training and data collection workflows"""
+"""Gateway for ML operations"""
 
 import sys
 import json
 import traceback
+import re
 from pathlib import Path
-from typing import Optional
+import pytest
 
 from rich.console import Console
 
 from pytest_coverage_impact.ml.complexity_model import ComplexityModel
 from pytest_coverage_impact.ml.training_data_collector import TrainingDataCollector
 from pytest_coverage_impact.ml.versioning import get_next_version
-from pytest_coverage_impact.utils import resolve_path, ensure_parent_directory_exists
+from pytest_coverage_impact.gateways.utils import resolve_path, ensure_parent_directory_exists
 
 
-class MLOrchestrator:
-    """Orchestrates ML model training and data collection commands"""
+class MLGateway:
+    """Gateway for ML operations (training, prediction, data collection)"""
 
-    def __init__(self, config=None):
+    def __init__(self, config: pytest.Config):
         self.config = config
         self.console = Console()
         self.project_root = Path(config.rootdir) if config else Path.cwd()
+
+    @staticmethod
+    def _collect(collector):
+        """Helper to collect training data via collector (Friend)"""
+        return collector.collect_training_data()
+
+    @staticmethod
+    def _save_data(collector, training_data, final_path, version):
+        """Helper to save training data via collector (Friend)"""
+        collector.save_training_data(training_data, final_path, version=version)
 
     def handle_collect_training_data(self, output_path: Path) -> Path:
         """Handle training data collection with auto-versioning
@@ -44,17 +55,18 @@ class MLOrchestrator:
 
         try:
             collector = TrainingDataCollector(self.project_root, None)
-            training_data = collector.collect_training_data()
+            training_data = self._collect(collector)
 
             # Version is part of the filename already handled by _determine_output_path logic usually,
             # but TrainingDataCollector might need it for metadata.
             # We can extract it from the path.
             version = self._extract_version_from_path(final_path)
 
-            collector.save_training_data(training_data, final_path, version=version)
+            self._save_data(collector, training_data, final_path, version=version)
             self.console.print(f"\n[green]✓[/green] Training data saved to {final_path}")
             return final_path
-        except Exception as e:
+        # JUSTIFICATION: Gateway must catch all exceptions to report to CLI user
+        except Exception as e:  # pylint: disable=broad-exception-caught
             self.console.print(f"\n[red]✗ Error collecting training data: {e}[/red]")
             self.console.print(f"[dim]{traceback.format_exc()}[/dim]")
             raise
@@ -116,9 +128,8 @@ class MLOrchestrator:
 
     def _extract_version_from_path(self, path: Path) -> str:
         """Extract version string from filename"""
-        import re
         match = re.search(r"v(\d+\.\d+)", path.name)
-        return match.group(1) if match else "1.0"
+        return match[1] if match else "1.0"
 
     def _load_training_data(self, path: Path):
         """Load training data from JSON file"""
@@ -127,16 +138,22 @@ class MLOrchestrator:
             with open(path, "r", encoding="utf-8") as f:
                 dataset = json.load(f)
             return dataset.get("examples", [])
-        except Exception as e:
+        # JUSTIFICATION: Gateway must catch all exceptions to prevent crash
+        except Exception as e:  # pylint: disable=broad-exception-caught
             self.console.print(f"[red]✗ Error loading training data: {e}[/red]")
             sys.exit(1)
+
+    @staticmethod
+    def _train_instance(model, examples):
+        """Helper to train model instance (Friend)"""
+        return model.train(examples)
 
     def _train_and_save_model(self, examples, source_path: Path) -> None:
         """Train model and save it"""
         self.console.print("[dim]Training model...[/dim]")
         try:
             model = ComplexityModel()
-            metrics = model.train(examples)
+            metrics = self._train_instance(model, examples)
 
             self.console.print("[green]✓[/green] Model trained successfully")
             self.console.print(f"  R² Score: {metrics.get('r2_score', 'N/A'):.3f}")
@@ -161,11 +178,12 @@ class MLOrchestrator:
             )
 
             self.console.print(f"\n[green]✓[/green] Model saved to {model_path}")
-            self.console.print("\n[yellow]Tip:[/yellow] Configure in pytest.ini (point to directory - auto-detects latest):")
+            self.console.print("\n[yellow]Tip:[/yellow] Configure plugin to use this path")
             self.console.print("  [pytest]")
             self.console.print("  coverage_impact_model_path = .coverage_impact/models")
 
-        except Exception as e:
+        # JUSTIFICATION: Gateway must catch all exceptions to prevent crash
+        except Exception as e:  # pylint: disable=broad-exception-caught
             self.console.print(f"\n[red]✗ Error training model: {e}[/red]")
             self.console.print(f"[dim]{traceback.format_exc()}[/dim]")
             sys.exit(1)

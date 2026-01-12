@@ -4,7 +4,7 @@ import ast
 from pathlib import Path
 
 
-from pytest_coverage_impact.utils import (
+from pytest_coverage_impact.gateways.utils import (
     find_function_node_by_line,
     parse_ast_tree,
     resolve_model_path_with_auto_detect,

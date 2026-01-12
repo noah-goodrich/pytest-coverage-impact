@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 
-from pytest_coverage_impact.config import get_model_path
+from pytest_coverage_impact.core.config import get_model_path
 
 
 def test_get_model_path_default_bundled_model(monkeypatch):

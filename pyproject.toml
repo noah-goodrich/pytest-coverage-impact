@@ -40,8 +40,8 @@ dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "pytest-mock>=3.0.0",
-    "black>=23.0.0",
     "ruff>=0.1.0",
+
     "mypy>=1.0.0",
     "pre-commit>=3.0.0",
     "build>=0.10.0",
@@ -70,10 +70,7 @@ markers = [
     "functional: Functional tests (end-to-end workflows, slow)",
 ]
 
-[tool.black]
-line-length = 120
-target-version = ['py38', 'py39', 'py310', 'py311']
-include = '\.pyi?$'
+
 
 [tool.ruff]
 line-length = 120
@@ -118,7 +115,11 @@ project_type = "generic"
 visibility_enforcement = true
 
 [tool.clean-arch.layer_map]
-"pytest_coverage_impact" = "UseCase"
-"pytest_coverage_impact.plugin" = "Interface"
-"pytest_coverage_impact.reporters" = "Interface"
+"pytest_coverage_impact.core" = "Domain"
+"pytest_coverage_impact.logic" = "UseCase"
+"pytest_coverage_impact.gateways" = "Infrastructure"
 "pytest_coverage_impact.ml" = "Infrastructure"
+"pytest_coverage_impact.ml.gateway" = "Infrastructure"
+"pytest_coverage_impact.ml.training_data_collector" = "Infrastructure"
+"pytest_coverage_impact.ml.complexity_model" = "Infrastructure"
+"pytest_coverage_impact.plugin" = "Interface"

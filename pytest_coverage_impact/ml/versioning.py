@@ -30,7 +30,7 @@ def get_next_version(base_path: Path, prefix: str, suffix: str = ".json") -> Tup
     if base_path.exists():
         for file_path in base_path.iterdir():
             if file_path.is_file():
-                match = pattern.match(file_path.name)
+                match = _match_pattern(pattern, file_path.name)
                 if match:
                     # Use indexing to avoid method call flags (clean-arch-demeter)
                     major = int(match[1])
@@ -71,7 +71,7 @@ def get_latest_version(base_path: Path, prefix: str, suffix: str = ".json") -> O
 
     for file_path in base_path.iterdir():
         if file_path.is_file():
-            match = pattern.match(file_path.name)
+            match = _match_pattern(pattern, file_path.name)
             if match:
                 major = int(match[1])
                 minor = int(match[2])
@@ -84,3 +84,8 @@ def get_latest_version(base_path: Path, prefix: str, suffix: str = ".json") -> O
     latest = max(versions, key=lambda x: x[0])
     version_str = f"{latest[0][0]}.{latest[0][1]}"
     return (version_str, latest[1])
+
+
+def _match_pattern(pattern, string):
+    """Helper to match regex pattern (Friend)"""
+    return pattern.match(string)

@@ -6,7 +6,8 @@ from typing import Optional
 
 import pytest
 
-from pytest_coverage_impact.utils import resolve_model_path_with_auto_detect
+from pytest_coverage_impact.gateways.utils import resolve_model_path_with_auto_detect
+from pytest_coverage_impact.ml.versioning import get_latest_version
 
 
 def _get_model_path_from_ini(config: pytest.Config, project_root: Path) -> Optional[Path]:
@@ -25,8 +26,6 @@ def _get_model_path_from_ini(config: pytest.Config, project_root: Path) -> Optio
             return resolve_model_path_with_auto_detect(ini_path, project_root)
     except (ValueError, AttributeError, KeyError, TypeError):
         pass
-
-    return None
 
     return None
 
@@ -58,8 +57,6 @@ def get_model_path_from_project_dir(project_root: Path) -> Optional[Path]:
     """
     project_model_dir = project_root / ".coverage_impact" / "models"
     if project_model_dir.exists() and project_model_dir.is_dir():
-        from pytest_coverage_impact.ml.versioning import get_latest_version
-
         latest = get_latest_version(project_model_dir, "complexity_model_v", ".pkl")
         if latest:
             return latest[1]
@@ -73,7 +70,8 @@ def get_default_bundled_model_path() -> Optional[Path]:
     Returns:
         Path to bundled model file, or None if not found
     """
-    plugin_dir = Path(__file__).parent
+    # config.py is in core/, so we need to go up to package root
+    plugin_dir = Path(__file__).parent.parent
     plugin_model_path = plugin_dir / "ml" / "models" / "complexity_model_v1.0.pkl"
     if plugin_model_path.exists():
         return plugin_model_path.resolve()

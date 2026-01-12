@@ -240,19 +240,18 @@ class TestAnalyzer:
         Returns:
             True if decorator is the specified marker
         """
-        if isinstance(decorator, ast.Call):
-            # JUSTIFICATION: Logic requires deep nesting
-            # pylint: disable=too-many-nested-blocks
-            if isinstance(decorator.func, ast.Attribute):
-                if decorator.func.attr == "mark":
-                    # Check args for marker name
-                    for arg in decorator.args:
-                        if isinstance(arg, ast.Name):
-                            if arg.id == marker_name:
-                                return True
-                        elif isinstance(arg, ast.Constant):
-                            if arg.value == marker_name:
-                                return True
+        if not isinstance(decorator, ast.Call):
+            return False
+
+        if not isinstance(decorator.func, ast.Attribute) or decorator.func.attr != "mark":
+            return False
+
+        # Check args for marker name
+        for arg in decorator.args:
+            if isinstance(arg, ast.Name) and arg.id == marker_name:
+                return True
+            if isinstance(arg, ast.Constant) and arg.value == marker_name:
+                return True
         return False
 
     @staticmethod

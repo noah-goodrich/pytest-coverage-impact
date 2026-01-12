@@ -2,7 +2,7 @@
 
 import ast
 from pathlib import Path
-from pytest_coverage_impact.call_graph import (
+from pytest_coverage_impact.gateways.call_graph import (
     CallGraph,
     CallGraphVisitor,
     find_python_files,

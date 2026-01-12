@@ -2,12 +2,11 @@
 
 import json
 from pathlib import Path
-from unittest.mock import Mock
 
 import pytest
 
-from pytest_coverage_impact.analyzer import CoverageImpactAnalyzer
-from pytest_coverage_impact.call_graph import CallGraph
+from pytest_coverage_impact.logic.analyzer import CoverageImpactAnalyzer
+from pytest_coverage_impact.gateways.call_graph import CallGraph
 
 
 def test_analyzer_init_with_source_dir():

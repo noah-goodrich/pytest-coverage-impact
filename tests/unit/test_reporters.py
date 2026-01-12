@@ -6,7 +6,7 @@ from pathlib import Path
 
 from rich.console import Console
 
-from pytest_coverage_impact.reporters import JSONReporter, TerminalReporter
+from pytest_coverage_impact.gateways.reporters import JSONReporter, TerminalReporter
 
 
 def test_terminal_reporter_empty_list():

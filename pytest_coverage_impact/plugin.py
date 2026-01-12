@@ -6,16 +6,15 @@ from pathlib import Path
 
 import pytest
 from rich.console import Console
-from rich.table import Table
 
-from pytest_coverage_impact.analyzer import CoverageImpactAnalyzer
-from pytest_coverage_impact.config import get_model_path
-from pytest_coverage_impact.ml.orchestrator import MLOrchestrator
-from pytest_coverage_impact.progress import ProgressMonitor
-from pytest_coverage_impact.reporters import TerminalReporter, JSONReporter
+from pytest_coverage_impact.logic.analyzer import CoverageImpactAnalyzer
+from pytest_coverage_impact.core.config import get_model_path
+from pytest_coverage_impact.ml.gateway import MLGateway
+from pytest_coverage_impact.gateways.progress import ProgressMonitor
+from pytest_coverage_impact.gateways.reporters import TerminalReporter, JSONReporter
 
 
-def pytest_load_initial_conftests(early_config, parser, args):
+def pytest_load_initial_conftests(args):
     """Hook to modify command line arguments before they're processed"""
     # Automatically add --cov-report=json if --coverage-impact is used
     if "--coverage-impact" in args:
@@ -27,10 +26,11 @@ def pytest_load_initial_conftests(early_config, parser, args):
             args.append("--cov-report=json")
 
 
-def pytest_addoption(parser: pytest.Parser) -> None:
-    """Add command-line options for coverage impact plugin"""
-    group = parser.getgroup("coverage-impact", "Coverage impact analysis with ML complexity estimation")
+def _configure_group(group) -> None:
+    """Configure arguments for the coverage-impact group
 
+    Helper to resolve Law of Demeter violations (group.addoption).
+    """
     group.addoption(
         "--coverage-impact",
         action="store_true",
@@ -115,6 +115,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="Collect training data and train model in one command. Auto-increments versions.",
     )
 
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """Add command-line options for coverage impact plugin"""
+    group = parser.getgroup("coverage-impact", "Coverage impact analysis with ML complexity estimation")
+    _configure_group(group)
+
     # Register ini option for model path configuration
     parser.addini(
         "coverage_impact_model_path",
@@ -132,25 +138,25 @@ def pytest_configure(config: pytest.Config) -> None:
         "coverage_impact: marks tests as part of coverage impact analysis",
     )
 
-    orchestrator = MLOrchestrator(config)
+    gateway = MLGateway(config)
 
     # Handle training data collection (runs before tests)
     collect_path = config.getoption("--coverage-impact-collect-training-data")
     if collect_path:
-        orchestrator.handle_collect_training_data(Path(collect_path))
+        _collect_training_data(gateway, collect_path)
         # Exit early - we're just collecting data, not running tests
         sys.exit(0)
 
     # Handle model training (runs before tests)
     train_data_path = config.getoption("--coverage-impact-train-model")
     if train_data_path:
-        orchestrator.handle_train_model(Path(train_data_path))
+        _train_model(gateway, train_data_path)
         # Exit early - we're just training, not running tests
         sys.exit(0)
 
     # Handle combined train command (collect + train)
     if config.getoption("--coverage-impact-train"):
-        orchestrator.handle_train()
+        _train_combined(gateway)
         # Exit early - we're just training, not running tests
         sys.exit(0)
 
@@ -185,7 +191,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
 
         # Get model path (CLI > config system)
         cli_model_path = config.getoption("--coverage-impact-model-path")
-        model_path = analyzer.get_model_path(cli_model_path) if cli_model_path else None
+        model_path = _resolve_model_path(analyzer, cli_model_path) if cli_model_path else None
 
         if not model_path:
             # Fallback to config system
@@ -193,11 +199,26 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
 
         _run_analysis(analyzer, coverage_file, model_path, console, config)
 
+    # JUSTIFICATION: Top-level entry point must catch all exceptions to prevent crash dump
     except Exception as e:  # pylint: disable=broad-exception-caught
-        # We can't avoid broad exception here as it's the top level hook handler
         console_instance = Console()
         console_instance.print(f"\n[red]✗ Error generating coverage impact report: {e}[/red]")
         console_instance.print(f"[dim]{traceback.format_exc()}[/dim]")
+
+
+def _collect_training_data(gateway, collect_path):
+    """Helper to collect training data via gateway"""
+    gateway.handle_collect_training_data(Path(collect_path))
+
+
+def _train_model(gateway, train_data_path):
+    """Helper to train model via gateway"""
+    gateway.handle_train_model(Path(train_data_path))
+
+
+def _train_combined(gateway):
+    """Helper to run combined training via gateway"""
+    gateway.handle_train()
 
 
 def _run_analysis(analyzer, coverage_file, model_path, console, config):
@@ -213,7 +234,6 @@ def _run_analysis(analyzer, coverage_file, model_path, console, config):
         impact_scores = results["impact_scores"]
         complexity_scores = results.get("complexity_scores", {})
         prioritized = results["prioritized"]
-        timings = results.get("timings", {})
 
         console.print(f"[green]✓[/green] Found {len(call_graph.graph)} functions")
         console.print(f"[green]✓[/green] Calculated scores for {len(impact_scores)} functions")
@@ -223,30 +243,46 @@ def _run_analysis(analyzer, coverage_file, model_path, console, config):
 
         console.print(f"[green]✓[/green] Prioritized {len(prioritized)} functions")
 
-    # Generate terminal report (outside progress monitor)
-    top_n = config.getoption("--coverage-impact-top", default=20)
-    console.print("\n")
-    reporter = TerminalReporter(console)
+    _generate_terminal_report(console, config, results, prioritized)
+    _generate_json_report(console, config, impact_scores)
+    _check_html_report(console, config)
 
-    # Print timings first? Or last? Original was inside progress monitor block.
-    # But progress monitor console usage might conflict.
-    # The original _print_timings was called inside _run_analysis inside progress block.
-    # But _print_timings uses console.
 
+def _resolve_model_path(analyzer, cli_model_path):
+    """Helper to resolve model path via analyzer"""
+    return analyzer.get_model_path(cli_model_path)
+
+
+def _run_terminal_reporter(reporter, results, prioritized, top_n):
+    """Helper to run terminal reporter"""
     reporter.print_timings(results.get("timings", {}))
     reporter.generate_report(prioritized, top_n=top_n, totals=results.get("totals"), files=results.get("files"))
 
-    # Generate JSON report if requested
+
+def _run_json_reporter(json_reporter, impact_scores, json_path):
+    """Helper to generate JSON report"""
+    json_reporter.generate_report(impact_scores, Path(json_path))
+
+
+def _generate_terminal_report(console, config, results, prioritized):
+    """Generate and print the terminal report"""
+    top_n = config.getoption("--coverage-impact-top", default=20)
+    console.print("\n")
+    reporter = TerminalReporter(console)
+    _run_terminal_reporter(reporter, results, prioritized, top_n)
+
+
+def _generate_json_report(console, config, impact_scores):
+    """Generate and save the JSON report if requested"""
     json_path = config.getoption("--coverage-impact-json")
     if json_path:
         json_reporter = JSONReporter()
-        json_reporter.generate_report(impact_scores, Path(json_path))
+        _run_json_reporter(json_reporter, impact_scores, json_path)
         console.print(f"\n[green]✓[/green] JSON report saved to {json_path}")
 
-    # Generate HTML report if requested
+
+def _check_html_report(console, config):
+    """Check and notify about HTML report status"""
     html_path = config.getoption("--coverage-impact-html")
     if html_path:
         console.print("\n[yellow]⚠ HTML reports coming soon[/yellow]")
-
-
-

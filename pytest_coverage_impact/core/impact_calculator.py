@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from pytest_coverage_impact.call_graph import CallGraph
+from pytest_coverage_impact.gateways.call_graph import CallGraph
 
 
 class ImpactCalculator:
@@ -90,25 +90,7 @@ class ImpactCalculator:
 
         if normalized in self._coverage_path_map:
             file_data = self._coverage_path_map[normalized]
-            summary = file_data.get("summary", {})
-
-            total_lines = summary.get("num_statements", 0)
-            covered_lines = summary.get("covered_lines", 0)
-
-            if total_lines > 0:
-                coverage_pct = covered_lines / total_lines
-            else:
-                coverage_pct = 0.0
-
-            # Check if function line is covered
-            executed_lines = file_data.get("executed_lines", [])
-            is_covered = line_num in executed_lines
-
-            # Count missing lines near function (approximate function coverage)
-            missing_lines = file_data.get("missing_lines", [])
-            function_missing = len([line for line in missing_lines if line_num <= line <= line_num + 50])
-
-            return is_covered, coverage_pct, function_missing
+            return self._extract_summary_from_data(file_data, line_num)
 
         # Fallback: try original path formats (for backward compatibility)
         file_keys = [
@@ -120,27 +102,31 @@ class ImpactCalculator:
         files_data = self.coverage_data.get("files", {})
         for file_key in file_keys:
             if file_key in files_data:
-                file_data = files_data[file_key]
-                summary = file_data.get("summary", {})
-
-                total_lines = summary.get("num_statements", 0)
-                covered_lines = summary.get("covered_lines", 0)
-
-                if total_lines > 0:
-                    coverage_pct = covered_lines / total_lines
-                else:
-                    coverage_pct = 0.0
-
-                executed_lines = file_data.get("executed_lines", [])
-                is_covered = line_num in executed_lines
-
-                missing_lines = file_data.get("missing_lines", [])
-                function_missing = len([line for line in missing_lines if line_num <= line <= line_num + 50])
-
-                return is_covered, coverage_pct, function_missing
+                return self._extract_summary_from_data(files_data[file_key], line_num)
 
         # File not in coverage data
         return False, 0.0, 0
+
+    @staticmethod
+    def _extract_summary_from_data(file_data: Dict, line_num: int) -> Tuple[bool, float, int]:
+        """Helper to extract coverage summary from file data (Friend)"""
+        summary = file_data.get("summary", {})
+        total_lines = summary.get("num_statements", 0)
+        covered_lines = summary.get("covered_lines", 0)
+
+        if total_lines > 0:
+            coverage_pct = covered_lines / total_lines
+        else:
+            coverage_pct = 0.0
+
+        executed_lines = file_data.get("executed_lines", [])
+        is_covered = line_num in executed_lines
+
+        missing_lines = file_data.get("missing_lines", [])
+        # Count missing lines near function (approximate function coverage)
+        function_missing = len([line for line in missing_lines if line_num <= line <= line_num + 50])
+
+        return is_covered, coverage_pct, function_missing
 
     def calculate_impact_scores(self, package_prefix: Optional[str] = None, progress_monitor=None) -> List[Dict]:
         """Calculate impact scores for all functions
@@ -173,33 +159,12 @@ class ImpactCalculator:
         for func_name, func_data in func_items:
             # Get pre-computed impact
             impact = all_impacts.get(func_name, 0)
-
-            # Get coverage info
             file_path = func_data["file"]
             line_num = func_data["line"]
 
             if file_path and line_num:
-                is_covered, coverage_pct, missing_lines = self.get_function_coverage(
-                    file_path, line_num, package_prefix
-                )
-
-                # Calculate impact score: impact * (1 - coverage)
-                impact_score = impact * (1.0 - coverage_pct)
-
-                impact_scores.append(
-                    {
-                        "function": func_name,
-                        "file": file_path,
-                        "line": line_num,
-                        "impact": impact,
-                        "covered": is_covered,
-                        "coverage_percentage": coverage_pct,
-                        "missing_lines": missing_lines,
-                        "impact_score": impact_score,
-                        "is_method": func_data.get("is_method", False),
-                        "class_name": func_data.get("class_name"),
-                    }
-                )
+                item = self._create_impact_item(func_name, func_data, impact, package_prefix)
+                impact_scores.append(item)
 
             # Update progress
             if progress_monitor and task_id:
@@ -214,6 +179,29 @@ class ImpactCalculator:
             progress_monitor.complete_task(task_id)
 
         return impact_scores
+
+    def _create_impact_item(self, func_name, func_data, impact, package_prefix):
+        """Create a single impact score item"""
+        file_path = func_data["file"]
+        line_num = func_data["line"]
+
+        is_covered, coverage_pct, missing_lines = self.get_function_coverage(file_path, line_num, package_prefix)
+
+        # Calculate impact score: impact * (1 - coverage)
+        impact_score = impact * (1.0 - coverage_pct)
+
+        return {
+            "function": func_name,
+            "file": file_path,
+            "line": line_num,
+            "impact": impact,
+            "covered": is_covered,
+            "coverage_percentage": coverage_pct,
+            "missing_lines": missing_lines,
+            "impact_score": impact_score,
+            "is_method": func_data.get("is_method", False),
+            "class_name": func_data.get("class_name"),
+        }
 
 
 def load_coverage_data(coverage_file: Path) -> Dict:

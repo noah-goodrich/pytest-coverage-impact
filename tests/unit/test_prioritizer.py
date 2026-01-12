@@ -1,6 +1,6 @@
 """Unit tests for prioritizer module"""
 
-from pytest_coverage_impact.prioritizer import Prioritizer
+from pytest_coverage_impact.core.prioritizer import Prioritizer
 
 
 def test_calculate_priority_basic():

@@ -5,17 +5,17 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from pytest_coverage_impact.call_graph import build_call_graph
-from pytest_coverage_impact.config import (
+from pytest_coverage_impact.gateways.call_graph import build_call_graph
+from pytest_coverage_impact.core.config import (
     get_default_bundled_model_path,
     get_model_path_from_env,
     get_model_path_from_project_dir,
 )
-from pytest_coverage_impact.impact_calculator import ImpactCalculator, load_coverage_data
+from pytest_coverage_impact.core.impact_calculator import ImpactCalculator, load_coverage_data
 from pytest_coverage_impact.ml.complexity_estimator import ComplexityEstimator
-from pytest_coverage_impact.prioritizer import Prioritizer
-from pytest_coverage_impact.progress import ProgressMonitor
-from pytest_coverage_impact.utils import parse_ast_tree, resolve_model_path_with_auto_detect
+from pytest_coverage_impact.core.prioritizer import Prioritizer
+from pytest_coverage_impact.gateways.progress import ProgressMonitor
+from pytest_coverage_impact.gateways.utils import parse_ast_tree, resolve_model_path_with_auto_detect
 
 
 class CoverageImpactAnalyzer:
@@ -102,7 +102,7 @@ class CoverageImpactAnalyzer:
         # Calculate impact scores
         step_start = time.time()
         calculator = ImpactCalculator(call_graph, coverage_data)
-        impact_scores = calculator.calculate_impact_scores(progress_monitor=progress_monitor)
+        impact_scores = self._run_impact_calculation(calculator, progress_monitor)
         timings["calculate_impact_scores"] = time.time() - step_start
 
         # Estimate complexity with ML
@@ -130,6 +130,11 @@ class CoverageImpactAnalyzer:
             "totals": coverage_data.get("totals", {}),
             "files": coverage_data.get("files", {}),
         }
+
+    @staticmethod
+    def _run_impact_calculation(calculator, progress_monitor):
+        """Helper to run impact calculation (Friend)"""
+        return calculator.calculate_impact_scores(progress_monitor=progress_monitor)
 
     def _estimate_complexities(  # noqa: C901 - Orchestrates ML complexity estimation with progress tracking
         self,
@@ -162,54 +167,73 @@ class CoverageImpactAnalyzer:
 
         try:
             estimator = ComplexityEstimator(model_path)
-
-            # Create progress task for complexity estimation
-            task_id = None
-            if progress_monitor:
-                task_id = progress_monitor.add_task("[cyan]Estimating complexity", total=min(limit, len(impact_scores)))
+            task_id = self._create_progress_task(progress_monitor, limit, impact_scores)
 
             # Estimate complexity for top functions (limit for performance)
-            for idx, item in enumerate(impact_scores[:limit]):
-                func_file = self.source_dir / item["file"]
-                if not func_file.exists():
-                    if progress_monitor:
-                        progress_monitor.update(task_id, advance=1)
-                    continue
+            progress_data = (progress_monitor, task_id)
+            scores = (complexity_scores, confidence_scores)
 
-                try:
-                    # Update progress with current function
-                    if progress_monitor:
-                        func_name = item["function"].split("::")[-1]
-                        progress_monitor.update_description(task_id, f"[cyan]Estimating complexity: {func_name}")
-
-                    score, lower, upper = self._estimate_function_complexity(
-                        estimator, func_file, item["line"], item["function"]
-                    )
-
-                    if score is not None:
-                        complexity_scores[item["function"]] = score
-
-                        # Calculate confidence from interval width
-                        if lower is not None and upper is not None:
-                            interval_width = upper - lower
-                            confidence = max(0.0, min(1.0, 1.0 - interval_width))
-                            confidence_scores[item["function"]] = confidence
-
-                    if progress_monitor:
-                        progress_monitor.update(task_id, advance=1)
-                except Exception:
-                    if progress_monitor:
-                        progress_monitor.update(task_id, advance=1)
-                    continue
+            for _, item in enumerate(impact_scores[:limit]):
+                self._process_single_complexity_estimate(estimator, item, progress_data, scores)
 
             if progress_monitor and task_id:
                 progress_monitor.complete_task(task_id)
 
-        except Exception:
+        # JUSTIFICATION: Orchestrator must catch model errors to return partial results safely
+        except Exception:  # pylint: disable=broad-exception-caught
             # Model loading/estimation failed - return empty scores
             pass
 
         return complexity_scores, confidence_scores
+
+    def _create_progress_task(self, progress_monitor, limit, impact_scores):
+        """Create progress task for complexity estimation"""
+        if not progress_monitor:
+            return None
+        return progress_monitor.add_task("[cyan]Estimating complexity", total=min(limit, len(impact_scores)))
+
+    @staticmethod
+    def _advance_progress(progress_monitor, task_id):
+        """Advance progress by 1 step"""
+        if progress_monitor and task_id:
+            progress_monitor.update(task_id, advance=1)
+
+    def _process_single_complexity_estimate(self, estimator, item, progress_data, scores):
+        """Process complexity estimation for a single function"""
+        progress_monitor, task_id = progress_data
+        complexity_scores, confidence_scores = scores
+        func_file = self.source_dir / item["file"]
+
+        if not func_file.exists():
+            self._advance_progress(progress_monitor, task_id)
+            return
+
+        try:
+            # Update progress with current function
+            if progress_monitor and task_id:
+                func_name = item["function"].split("::")[-1]
+                progress_monitor.update_description(task_id, f"[cyan]Estimating complexity: {func_name}")
+
+            score, lower, upper = self._estimate_function_complexity(
+                estimator, func_file, item["line"], item["function"]
+            )
+
+            if score is not None:
+                complexity_scores[item["function"]] = score
+                self._update_confidence_scores(confidence_scores, item["function"], lower, upper)
+
+            self._advance_progress(progress_monitor, task_id)
+        # JUSTIFICATION: Functional error in one function estimation should not crash the batch process
+        except Exception:  # pylint: disable=broad-exception-caught
+            self._advance_progress(progress_monitor, task_id)
+
+    @staticmethod
+    def _update_confidence_scores(confidence_scores, function_name, lower, upper):
+        """Calculate and update confidence scores"""
+        if lower is not None and upper is not None:
+            interval_width = upper - lower
+            confidence = max(0.0, min(1.0, 1.0 - interval_width))
+            confidence_scores[function_name] = confidence
 
     def _get_default_model_path(self) -> Optional[Path]:
         """Get default model path using config system (without pytest config object)
@@ -250,7 +274,7 @@ class CoverageImpactAnalyzer:
         return tree
 
     def _estimate_function_complexity(
-        self, estimator: ComplexityEstimator, func_file: Path, line_num: int, func_signature: str
+        self, estimator: ComplexityEstimator, func_file: Path, line_num: int, _func_signature: str
     ) -> Tuple[Optional[float], Optional[float], Optional[float]]:
         """Estimate complexity for a single function
 

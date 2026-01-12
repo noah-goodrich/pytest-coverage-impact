@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from pytest_coverage_impact.call_graph import CallGraph, FunctionMetadata
-from pytest_coverage_impact.impact_calculator import (
+from pytest_coverage_impact.gateways.call_graph import CallGraph, FunctionMetadata
+from pytest_coverage_impact.core.impact_calculator import (
     ImpactCalculator,
     load_coverage_data,
 )

@@ -237,4 +237,3 @@ pytest_coverage_impact/ml/training_data_collector.py:1:0: R0801: Similar lines i
 
 ------------------------------------------------------------------
 Your code has been rated at 8.53/10 (previous run: 8.53/10, +0.00)
-

@@ -67,10 +67,8 @@ class TerminalReporter:
                     timing_table.add_row(step_display, f"{step_time:.2f}s", f"{pct:.1f}%")
 
         if total > 0:
-            timing_table.add_section()
-            timing_table.add_row(
-                "[bold]TOTAL[/bold]", f"[bold]{total:.2f}s[/bold]", "100.0%", style="bold green"
-            )
+            self._add_table_section(timing_table)
+            timing_table.add_row("[bold]TOTAL[/bold]", f"[bold]{total:.2f}s[/bold]", "100.0%", style="bold green")
             self.console.print("\n")
             self.console.print(timing_table)
 
@@ -141,11 +139,11 @@ class TerminalReporter:
             # Complexity with confidence interval if available
             complexity = item.get("complexity_score", 0.5)
             if "confidence" in item and item["confidence"] < 1.0:
-                complexity_str = f"{complexity:.2f} [±{1-item['confidence']:.2f}]"
+                complexity_str = f"{complexity:.2f} [±{1 - item['confidence']:.2f}]"
             else:
                 complexity_str = f"{complexity:.2f}"
 
-            coverage_pct = f"{item['coverage_percentage']*100:.1f}%" if item.get("coverage_percentage") else "N/A"
+            coverage_pct = f"{item['coverage_percentage'] * 100:.1f}%" if item.get("coverage_percentage") else "N/A"
 
             # Truncate file path
             file_path = item["file"]
@@ -167,6 +165,11 @@ class TerminalReporter:
             f"\n[dim]Showing top {min(top_n, len(impact_scores))} of {len(impact_scores)} functions[/dim]"
         )
 
+    @staticmethod
+    def _add_table_section(table: Table) -> None:
+        """Helper to add section to table (Friend/Stranger boundary)"""
+        table.add_section()
+
 
 class JSONReporter:
     """Generate JSON report for coverage impact analysis"""
@@ -179,11 +182,16 @@ class JSONReporter:
             impact_scores: List of function impact score dictionaries
             output_path: Path to write JSON file
         """
-        report = {
+        report = JSONReporter.get_report_data(impact_scores)
+
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(report, f, indent=2)
+
+    @staticmethod
+    def get_report_data(impact_scores: List[Dict]) -> Dict:
+        """Get report data as a dictionary"""
+        return {
             "version": "1.0",
             "total_functions": len(impact_scores),
             "functions": impact_scores,
         }
-
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(report, f, indent=2)

@@ -20,22 +20,22 @@ from rich.console import Console  # noqa: E402 # pylint: disable=wrong-import-po
 from rich.table import Table  # noqa: E402 # pylint: disable=wrong-import-position
 
 # JUSTIFICATION: Configures system path before import
-from pytest_coverage_impact.analyzer import CoverageImpactAnalyzer  # noqa: E402 # pylint: disable=wrong-import-position
+from pytest_coverage_impact.logic.analyzer import CoverageImpactAnalyzer  # noqa: E402 # pylint: disable=wrong-import-position
 
 # JUSTIFICATION: Configures system path before import
-from pytest_coverage_impact.call_graph import build_call_graph  # noqa: E402 # pylint: disable=wrong-import-position
+from pytest_coverage_impact.gateways.call_graph import build_call_graph  # noqa: E402 # pylint: disable=wrong-import-position
 
 # JUSTIFICATION: Configures system path before import
-from pytest_coverage_impact.impact_calculator import (  # noqa: E402 # pylint: disable=wrong-import-position
+from pytest_coverage_impact.core.impact_calculator import (  # noqa: E402 # pylint: disable=wrong-import-position
     ImpactCalculator,
     load_coverage_data,
 )
 
 # JUSTIFICATION: Configures system path before import
-from pytest_coverage_impact.prioritizer import Prioritizer  # noqa: E402 # pylint: disable=wrong-import-position
+from pytest_coverage_impact.core.prioritizer import Prioritizer  # noqa: E402 # pylint: disable=wrong-import-position
 
 # JUSTIFICATION: Configures system path before import
-from pytest_coverage_impact.progress import ProgressMonitor  # noqa: E402 # pylint: disable=wrong-import-position
+from pytest_coverage_impact.gateways.progress import ProgressMonitor  # noqa: E402 # pylint: disable=wrong-import-position
 
 console = Console()
 

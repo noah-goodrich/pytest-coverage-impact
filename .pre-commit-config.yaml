@@ -3,9 +3,7 @@
 # Run manually: pre-commit run --all-files
 #
 # Hook Behavior:
-# - Black checks formatting and FAILS if files need reformatting
-#   User must manually run: black pytest_coverage_impact tests/
-#   Then add reformatted files before committing
+# - Ruff format ensures code style consistency (Black-compatible)
 # - Ruff auto-fixes issues, then checks for remaining errors
 # - Pytest runs unit tests (excludes functional/slow tests)
 
@@ -22,22 +20,15 @@ repos:
       - id: check-added-large-files
         args: ['--maxkb=1000']
 
-  - repo: https://github.com/psf/black
-    rev: 23.12.1
-    hooks:
-      - id: black
-        language_version: python3
-        args: ['--check', '--line-length=120']
-        # --check flag makes black FAIL if files need reformatting
-        # User must manually run: black pytest_coverage_impact tests/
-        # Then add the reformatted files before committing
-
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.1.9
     hooks:
-      # Auto-fix issues
+      # Auto-fix lint issues
       - id: ruff
         args: ['--fix']
+      # Fast, Black-compatible formatting
+      - id: ruff-format
+
 
   # Second ruff check (without --fix) - fails if errors remain after fixing
   - repo: local

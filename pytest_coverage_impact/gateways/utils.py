@@ -2,7 +2,9 @@
 
 import ast
 from pathlib import Path
-from typing import Optional, Any, Match
+from typing import Optional, Match
+
+from pytest_coverage_impact.ml.versioning import get_latest_version
 
 
 def resolve_path(path: Path, project_root: Path) -> Path:
@@ -34,8 +36,6 @@ def resolve_model_path_with_auto_detect(
     Returns:
         Path to model file, or None if not found
     """
-    # Lazy import to avoid circular dependency
-    from pytest_coverage_impact.ml.versioning import get_latest_version
 
     model_path = resolve_path(Path(path_str), project_root)
 
@@ -112,6 +112,7 @@ def extract_regex_group(match_obj: Optional[Match], group_index: int) -> Optiona
     if match_obj:
         return match_obj.group(group_index)
     return None
+
 
 def extract_method_name_from_full_name(full_name: str) -> str:
     """Extract method name from full function name
