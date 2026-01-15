@@ -5,9 +5,10 @@ from typing import Protocol, runtime_checkable
 
 from rich.console import Console
 from rich.panel import Panel
+from rich.prompt import Confirm
 from rich.text import Text
 
-__stellar_version__ = "1.1.0"
+__stellar_version__ = "1.1.1"
 
 
 @runtime_checkable
@@ -78,6 +79,4 @@ class ProjectTelemetry(TelemetryPort):
 
     def confirm(self, prompt: str, default: bool = True) -> bool:
         """Prompt user for confirmation."""
-        from rich.prompt import Confirm
-
         return Confirm.ask(f"[{self.color}]?[/] {prompt}", default=default, console=self.console)
