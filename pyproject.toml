@@ -47,7 +47,6 @@ dev = [
     "build>=0.10.0",
     "twine>=4.0.0",
     "pylint>=2.15.0",
-    "clean-architecture-linter-plugin>=1.1.0",
 ]
 
 [project.entry-points.pytest11]
@@ -113,6 +112,9 @@ max-line-length = 120
 [tool.clean-arch]
 project_type = "generic"
 visibility_enforcement = true
+project_name = "SENSORIA"
+color = "blue"
+welcome_msg = "Orbital Sensors Active"
 
 [tool.clean-arch.layer_map]
 "pytest_coverage_impact.core" = "Domain"

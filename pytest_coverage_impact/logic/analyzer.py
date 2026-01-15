@@ -24,17 +24,22 @@ from pytest_coverage_impact.gateways.utils import (
 )
 
 
+from pytest_coverage_impact.interface.telemetry import ProjectTelemetry
+
+
 class CoverageImpactAnalyzer:
     """Orchestrates coverage impact analysis - testable business logic"""
 
-    def __init__(self, project_root: Path, source_dir: Optional[Path] = None):
+    def __init__(self, project_root: Path, telemetry: ProjectTelemetry, source_dir: Optional[Path] = None):
         """Initialize analyzer
 
         Args:
             project_root: Root directory of the project
+            telemetry: Telemetry port for reporting
             source_dir: Optional source directory (auto-detected if not provided)
         """
         self.project_root = Path(project_root).resolve()
+        self.telemetry = telemetry
         self.source_dir = source_dir if source_dir else self._find_source_directory()
         self._ast_cache: Dict[Path, ast.AST] = {}  # Cache AST trees by file path
 
@@ -68,32 +73,20 @@ class CoverageImpactAnalyzer:
         model_path: Optional[Path] = None,
         progress_monitor: Optional[ProgressMonitor] = None,
     ) -> Dict:
-        """Perform full coverage impact analysis
-
-        Args:
-            coverage_file: Optional path to coverage.json (defaults to project_root/coverage.json)
-            model_path: Optional path to ML model (auto-detected if not provided)
-            progress_monitor: Optional progress monitor for showing progress
-
-        Returns:
-            Dictionary with analysis results:
-            - call_graph: CallGraph object
-            - impact_scores: List of impact score dicts
-            - complexity_scores: Dict mapping function signatures to complexity scores
-            - confidence_scores: Dict mapping function signatures to confidence scores
-            - prioritized: List of prioritized functions
-            - timings: Dict with timing information for each step
-        """
+        """Perform full coverage impact analysis"""
+        self.telemetry.step("Initializing Analysis: Calculating hull integrity via coverage impact...")
         timings = {}
 
         if coverage_file is None:
             coverage_file = self.project_root / "coverage.json"
 
         if not coverage_file.exists():
+            self.telemetry.error(f"Coverage file not found: {coverage_file}")
             raise FileNotFoundError(f"Coverage file not found: {coverage_file}")
 
         # Build call graph
         step_start = time.time()
+        self.telemetry.step("Building Call Graph: Mapping the function lattice...")
         call_graph = build_call_graph(self.source_dir, progress_monitor=progress_monitor)
         timings["build_call_graph"] = time.time() - step_start
 
@@ -107,12 +100,14 @@ class CoverageImpactAnalyzer:
 
         # Calculate impact scores
         step_start = time.time()
+        self.telemetry.step("Calculating Impact: Determining blast radius...")
         calculator = ImpactCalculator(call_graph, coverage_data)
         impact_scores = self._run_impact_calculation(calculator, progress_monitor)
         timings["calculate_impact_scores"] = time.time() - step_start
 
         # Estimate complexity with ML
         step_start = time.time()
+        self.telemetry.step("Estimating Complexity: Calibrating ML sensors...")
         complexity_scores, confidence_scores = self._estimate_complexities(
             impact_scores, model_path=model_path, progress_monitor=progress_monitor
         )
@@ -120,6 +115,7 @@ class CoverageImpactAnalyzer:
 
         # Prioritize functions
         step_start = time.time()
+        self.telemetry.step("Prioritizing Tests: Optimizing the flight path...")
         prioritized = Prioritizer.prioritize_functions(impact_scores, complexity_scores, confidence_scores)
         timings["prioritize_functions"] = time.time() - step_start
 

@@ -1,18 +1,14 @@
-"""Main pytest plugin for coverage impact analysis"""
-
 import sys
-import traceback
 from pathlib import Path
 
 import pytest
-from rich.console import Console
 
 from pytest_coverage_impact.logic.analyzer import CoverageImpactAnalyzer
 from pytest_coverage_impact.core.config import get_model_path
 from pytest_coverage_impact.ml.gateway import MLGateway
 from pytest_coverage_impact.gateways.progress import ProgressMonitor
 from pytest_coverage_impact.gateways.reporters import TerminalReporter, JSONReporter
-from pytest_coverage_impact.ui import SystemUI
+from pytest_coverage_impact.di.container import SensoriaContainer
 
 
 def pytest_load_initial_conftests(args):
@@ -117,9 +113,20 @@ def _configure_group(group) -> None:
     )
 
 
+BANNER = r"""
+    ____
+   / ___|_____   _____ _ __ __ _  __ _  ___
+  | |   / _ \ \ / / _ \ '__/ _` |/ _` |/ _ \
+  | |__| (_) \ V /  __/ | | (_| | (_| |  __/
+   \____\___/ \_/ \___|_|  \__,_|\__, |\___|
+                                 |___/
+       [ COVERAGE IMPACT ANALYZER ]
+"""
+
+
 def pytest_addoption(parser: pytest.Parser) -> None:
     """Add command-line options for coverage impact plugin"""
-    group = parser.getgroup("coverage-impact", "Coverage impact analysis with ML complexity estimation")
+    group = parser.getgroup("coverage-impact", f"{BANNER}\nCoverage impact analysis with ML complexity estimation")
     _configure_group(group)
 
     # Register ini option for model path configuration
@@ -164,7 +171,13 @@ def pytest_configure(config: pytest.Config) -> None:
 
 def pytest_sessionstart(session: pytest.Session) -> None:
     """Stellar Handshake: Sensoria Calibration"""
-    SystemUI.announce_initialization(session.config)
+    if not session.config.getoption("--coverage-impact"):
+        return
+
+    container = SensoriaContainer()
+    telemetry = container.get("TelemetryPort")
+    telemetry.handshake()
+    session.config.telemetry = telemetry
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
@@ -179,7 +192,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         return
 
     try:
-        SystemUI.announce_section("Coverage Impact Analysis")
+        telemetry = session.config.telemetry
 
         # Determine project root
         project_root = Path(config.rootdir)
@@ -187,11 +200,11 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         # Check if we have coverage data
         coverage_file = project_root / "coverage.json"
         if not coverage_file.exists():
-            SystemUI.announce_warning("coverage.json not found. Run pytest with --cov first.")
+            telemetry.error("coverage.json not found. Run pytest with --cov first.")
             return
 
         # Create analyzer and get model path
-        analyzer = CoverageImpactAnalyzer(project_root)
+        analyzer = CoverageImpactAnalyzer(project_root, telemetry)
 
         # Get model path (CLI > config system)
         cli_model_path = config.getoption("--coverage-impact-model-path")
@@ -206,9 +219,11 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     # JUSTIFICATION: Top-level entry point must catch all exceptions to prevent crash dump
     except Exception as e:  # pylint: disable=broad-exception-caught
         # JUSTIFICATION: Report generation should not crash the test session
-        SystemUI.announce_error(f"generating coverage impact report: {e}")
-        # Print full traceback for debugging if verbose
-        SystemUI.announce_error(f"[dim]{traceback.format_exc()}[/dim]")
+        telemetry = getattr(config, "telemetry", None)
+        if telemetry:
+            telemetry.error(f"Error generating coverage impact report: {e}")
+        else:
+            print(f"Error generating coverage impact report: {e}")
 
 
 def _collect_training_data(gateway, collect_path):
@@ -228,12 +243,11 @@ def _train_combined(gateway):
 
 def _run_analysis(analyzer, coverage_file, model_path, config):
     """Run the analysis steps"""
-    # Create console for progress monitor
-    console = Console()
-
     # Create progress monitor for analysis
-    with ProgressMonitor(console, enabled=True) as progress:
-        SystemUI.announce_progress("Analyzing coverage impact...")
+    with ProgressMonitor(enabled=True) as progress:
+        telemetry = getattr(config, "telemetry", None)
+        if telemetry:
+            telemetry.step("Analyzing coverage impact...")
 
         # Perform analysis with model path and progress monitor
         results = analyzer.analyze(coverage_file, model_path=model_path, progress_monitor=progress)
@@ -243,15 +257,16 @@ def _run_analysis(analyzer, coverage_file, model_path, config):
         complexity_scores = results.get("complexity_scores", {})
         prioritized = results["prioritized"]
 
-        SystemUI.announce_success(f"Found {len(call_graph.graph)} functions")
-        SystemUI.announce_success(f"Calculated scores for {len(impact_scores)} functions")
+        if telemetry:
+            telemetry.step(f"Found {len(call_graph.graph)} functions")
+            telemetry.step(f"Calculated scores for {len(impact_scores)} functions")
 
-        if complexity_scores:
-            SystemUI.announce_success(f"Estimated complexity for {len(complexity_scores)} functions")
+            if complexity_scores:
+                telemetry.step(f"Estimated complexity for {len(complexity_scores)} functions")
 
-        SystemUI.announce_success(f"Prioritized {len(prioritized)} functions")
+            telemetry.step(f"Prioritized {len(prioritized)} functions")
 
-    _generate_terminal_report(console, config, results, prioritized)
+    _generate_terminal_report(config, results, prioritized)
     _generate_json_report(config, impact_scores)
     _check_html_report(config)
 
@@ -277,11 +292,11 @@ def _run_json_reporter(json_reporter, impact_scores, json_path):
     json_reporter.generate_report(impact_scores, Path(json_path))
 
 
-def _generate_terminal_report(console, config, results, prioritized):
+def _generate_terminal_report(config, results, prioritized):
     """Generate and print the terminal report"""
+    telemetry = getattr(config, "telemetry", None)
     top_n = config.getoption("--coverage-impact-top", default=20)
-    console.print("\n")
-    reporter = TerminalReporter(console)
+    reporter = TerminalReporter(telemetry.console if telemetry else None)
     _run_terminal_reporter(reporter, results, prioritized, top_n)
 
 
@@ -291,11 +306,15 @@ def _generate_json_report(config, impact_scores):
     if json_path:
         json_reporter = JSONReporter()
         _run_json_reporter(json_reporter, impact_scores, json_path)
-        SystemUI.announce_success(f"JSON report saved to {json_path}")
+        telemetry = getattr(config, "telemetry", None)
+        if telemetry:
+            telemetry.step(f"JSON report saved to {json_path}")
 
 
 def _check_html_report(config):
     """Check and notify about HTML report status"""
     html_path = config.getoption("--coverage-impact-html")
     if html_path:
-        SystemUI.announce_warning("HTML reports coming soon")
+        telemetry = getattr(config, "telemetry", None)
+        if telemetry:
+            telemetry.error("HTML reports coming soon")

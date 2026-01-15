@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -9,17 +10,22 @@ from pytest_coverage_impact.logic.analyzer import CoverageImpactAnalyzer
 from pytest_coverage_impact.gateways.call_graph import CallGraph
 
 
-def test_analyzer_init_with_source_dir():
+@pytest.fixture
+def telemetry():
+    return MagicMock()
+
+
+def test_analyzer_init_with_source_dir(telemetry):
     """Test analyzer initialization with explicit source directory"""
     project_root = Path("/project")
     source_dir = Path("/project/src")
 
-    analyzer = CoverageImpactAnalyzer(project_root, source_dir)
+    analyzer = CoverageImpactAnalyzer(project_root, telemetry, source_dir)
     assert analyzer.project_root == project_root.resolve()
     assert analyzer.source_dir == source_dir
 
 
-def test_analyzer_init_auto_detect_source_dir(tmp_path):
+def test_analyzer_init_auto_detect_source_dir(tmp_path, telemetry):
     """Test analyzer initialization with auto-detection of source directory"""
     project_root = tmp_path / "project"
     project_root.mkdir()
@@ -30,32 +36,32 @@ def test_analyzer_init_auto_detect_source_dir(tmp_path):
     (src_dir / "module.py").write_text("def test():\n    pass\n")
 
     # Ensure project_root itself doesn't have Python files that would interfere
-    analyzer = CoverageImpactAnalyzer(project_root)
+    analyzer = CoverageImpactAnalyzer(project_root, telemetry)
     # Should find src directory since it has Python files and project_root doesn't
     assert analyzer.source_dir in {src_dir, project_root}
 
 
-def test_analyzer_init_fallback_to_project_root(tmp_path):
+def test_analyzer_init_fallback_to_project_root(tmp_path, telemetry):
     """Test analyzer initialization falls back to project root when no src dir found"""
     project_root = tmp_path / "project"
     project_root.mkdir()
 
-    analyzer = CoverageImpactAnalyzer(project_root)
+    analyzer = CoverageImpactAnalyzer(project_root, telemetry)
     assert analyzer.source_dir == project_root
 
 
-def test_analyze_coverage_file_not_found(tmp_path):
+def test_analyze_coverage_file_not_found(tmp_path, telemetry):
     """Test analyze raises FileNotFoundError when coverage file doesn't exist"""
     project_root = tmp_path / "project"
     project_root.mkdir()
 
-    analyzer = CoverageImpactAnalyzer(project_root)
+    analyzer = CoverageImpactAnalyzer(project_root, telemetry)
 
     with pytest.raises(FileNotFoundError):
         analyzer.analyze()
 
 
-def test_analyze_no_functions_found(tmp_path):
+def test_analyze_no_functions_found(tmp_path, telemetry):
     """Test analyze raises ValueError when no functions are found"""
     project_root = tmp_path / "project"
     project_root.mkdir()
@@ -66,17 +72,17 @@ def test_analyze_no_functions_found(tmp_path):
     coverage_file = project_root / "coverage.json"
     coverage_file.write_text(json.dumps({"files": {}}))
 
-    analyzer = CoverageImpactAnalyzer(project_root, source_dir)
+    analyzer = CoverageImpactAnalyzer(project_root, telemetry, source_dir)
 
     with pytest.raises(ValueError, match="No functions found"):
         analyzer.analyze(coverage_file)
 
 
-def test_analyze_success(temp_project):
+def test_analyze_success(temp_project, telemetry):
     """Test successful analysis"""
     project_root, source_dir, coverage_file = temp_project
 
-    analyzer = CoverageImpactAnalyzer(project_root, source_dir)
+    analyzer = CoverageImpactAnalyzer(project_root, telemetry, source_dir)
     results = analyzer.analyze(coverage_file)
 
     assert "call_graph" in results
@@ -92,7 +98,7 @@ def test_analyze_success(temp_project):
     assert isinstance(results["prioritized"], list)
 
 
-def test_analyze_with_model_path(temp_project, tmp_path):
+def test_analyze_with_model_path(temp_project, tmp_path, telemetry):
     """Test analysis with explicit model path"""
     project_root, source_dir, coverage_file = temp_project
 
@@ -100,7 +106,7 @@ def test_analyze_with_model_path(temp_project, tmp_path):
     model_file = tmp_path / "model.pkl"
     model_file.write_bytes(b"mock model")
 
-    analyzer = CoverageImpactAnalyzer(project_root, source_dir)
+    analyzer = CoverageImpactAnalyzer(project_root, telemetry, source_dir)
     results = analyzer.analyze(coverage_file, model_path=model_file)
 
     # Should still complete even if model can't be loaded
@@ -108,25 +114,25 @@ def test_analyze_with_model_path(temp_project, tmp_path):
     assert "prioritized" in results
 
 
-def test_get_model_path_with_cli_path(tmp_path):
+def test_get_model_path_with_cli_path(tmp_path, telemetry):
     """Test get_model_path with CLI provided path"""
     project_root = tmp_path / "project"
     project_root.mkdir()
     model_file = project_root / "custom_model.pkl"
     model_file.write_bytes(b"model data")
 
-    analyzer = CoverageImpactAnalyzer(project_root)
+    analyzer = CoverageImpactAnalyzer(project_root, telemetry)
     result = analyzer.get_model_path(str(model_file))
 
     assert result == model_file.resolve()
 
 
-def test_get_model_path_without_cli_path(tmp_path, monkeypatch):
+def test_get_model_path_without_cli_path(tmp_path, monkeypatch, telemetry):
     """Test get_model_path without CLI path (uses defaults)"""
     project_root = tmp_path / "project"
     project_root.mkdir()
 
-    analyzer = CoverageImpactAnalyzer(project_root)
+    analyzer = CoverageImpactAnalyzer(project_root, telemetry)
 
     # Mock environment variable
     monkeypatch.delenv("PYTEST_COVERAGE_IMPACT_MODEL_PATH", raising=False)
@@ -138,25 +144,25 @@ def test_get_model_path_without_cli_path(tmp_path, monkeypatch):
     assert result is None or isinstance(result, Path)
 
 
-def test_get_model_path_from_env_var(tmp_path, monkeypatch):
+def test_get_model_path_from_env_var(tmp_path, monkeypatch, telemetry):
     """Test get_model_path uses environment variable"""
     project_root = tmp_path / "project"
     project_root.mkdir()
     model_file = project_root / "env_model.pkl"
     model_file.write_bytes(b"env model")
 
-    analyzer = CoverageImpactAnalyzer(project_root)
+    analyzer = CoverageImpactAnalyzer(project_root, telemetry)
     monkeypatch.setenv("PYTEST_COVERAGE_IMPACT_MODEL_PATH", str(model_file))
 
     result = analyzer.get_model_path()
     assert result == model_file.resolve()
 
 
-def test_estimate_complexities_no_model(temp_project):
+def test_estimate_complexities_no_model(temp_project, telemetry):
     """Test complexity estimation without a model using public API"""
     project_root, source_dir, coverage_file = temp_project
 
-    analyzer = CoverageImpactAnalyzer(project_root, source_dir)
+    analyzer = CoverageImpactAnalyzer(project_root, telemetry, source_dir)
 
     # Pass a nonexistent model path to ensure fallback logic is used
     nonexistent_path = project_root / "nonexistent_model.pkl"
@@ -172,7 +178,7 @@ def test_estimate_complexities_no_model(temp_project):
     assert not results["confidence_scores"]
 
 
-def test_estimate_function_complexity_file_not_found(temp_project):
+def test_estimate_function_complexity_file_not_found(temp_project, telemetry):
     """Test analysis triggers simple fallback when file not found (public API)"""
     project_root, source_dir, _ = temp_project
 
@@ -193,7 +199,7 @@ def test_estimate_function_complexity_file_not_found(temp_project):
     }
     coverage_file.write_text(json.dumps(coverage_data))
 
-    analyzer = CoverageImpactAnalyzer(project_root, source_dir)
+    analyzer = CoverageImpactAnalyzer(project_root, telemetry, source_dir)
 
     # This should not raise an error, just skip the file or return default complexity
     results = analyzer.analyze(coverage_file)
@@ -204,7 +210,7 @@ def test_estimate_function_complexity_file_not_found(temp_project):
     assert "complexity_scores" in results
 
 
-def test_find_source_directory_priority_order(tmp_path):
+def test_find_source_directory_priority_order(tmp_path, telemetry):
     """Test source directory detection uses correct priority order"""
     project_root = tmp_path / "myproject"
     project_root.mkdir()
@@ -218,6 +224,6 @@ def test_find_source_directory_priority_order(tmp_path):
     src_dir.mkdir()
     (src_dir / "code.py").write_text("def test():\n    pass\n")
 
-    analyzer = CoverageImpactAnalyzer(project_root)
+    analyzer = CoverageImpactAnalyzer(project_root, telemetry)
     # Should prefer nested directory (project_name/project_name) over src, or find one of them
     assert analyzer.source_dir in {nested_dir, src_dir, project_root}
