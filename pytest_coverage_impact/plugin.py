@@ -1,3 +1,4 @@
+"""Pytest plugin for coverage impact analysis."""
 import sys
 from pathlib import Path
 
@@ -149,7 +150,7 @@ def pytest_configure(config: pytest.Config) -> None:
     gateway = MLGateway(config)
 
     # Handle training data collection (runs before tests)
-    collect_path = config.getoption("--coverage-impact-collect-training-data")
+    collect_path = config.getoption("--coverage-impact-collect-training-data")  # pylint: disable=clean-arch-demeter
     if collect_path:
         _collect_training_data(gateway, collect_path)
         # Exit early - we're just collecting data, not running tests
@@ -171,7 +172,7 @@ def pytest_configure(config: pytest.Config) -> None:
 
 def pytest_sessionstart(session: pytest.Session) -> None:
     """Stellar Handshake: Sensoria Calibration"""
-    if not session.config.getoption("--coverage-impact"):
+    if not session.config.getoption("--coverage-impact"):  # pylint: disable=clean-arch-demeter
         return
 
     container = SensoriaContainer()

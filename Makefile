@@ -22,7 +22,7 @@ lint:
 	@if pip show pylint-clean-architecture > /dev/null 2>&1 || [ -d "/development/pylint-clean-architecture" ]; then \
 		pylint --load-plugins=clean_architecture_linter pytest_coverage_impact/ tests/; \
 	else \
-		pylint pytest_coverage_impact/ tests/; \
+		pylint --disable=unknown-option-value pytest_coverage_impact/ tests/; \
 	fi
 
 format:
