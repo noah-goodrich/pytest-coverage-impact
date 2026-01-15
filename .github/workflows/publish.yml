@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 concurrency:
   group: release
@@ -59,7 +60,7 @@ jobs:
 
       - name: Publish package distributions to PyPI
         # Only publish if semantic release created a release (dist/ exists)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('dist/*.tar.gz') != ''
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && hashFiles('dist/*.tar.gz') != ''
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
