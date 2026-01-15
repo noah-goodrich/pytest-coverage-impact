@@ -11,11 +11,17 @@ from pytest_coverage_impact.core.config import (
     get_model_path_from_env,
     get_model_path_from_project_dir,
 )
-from pytest_coverage_impact.core.impact_calculator import ImpactCalculator, load_coverage_data
+from pytest_coverage_impact.core.impact_calculator import (
+    ImpactCalculator,
+    load_coverage_data,
+)
 from pytest_coverage_impact.ml.complexity_estimator import ComplexityEstimator
 from pytest_coverage_impact.core.prioritizer import Prioritizer
 from pytest_coverage_impact.gateways.progress import ProgressMonitor
-from pytest_coverage_impact.gateways.utils import parse_ast_tree, resolve_model_path_with_auto_detect
+from pytest_coverage_impact.gateways.utils import (
+    parse_ast_tree,
+    resolve_model_path_with_auto_detect,
+)
 
 
 class CoverageImpactAnalyzer:
@@ -274,7 +280,11 @@ class CoverageImpactAnalyzer:
         return tree
 
     def _estimate_function_complexity(
-        self, estimator: ComplexityEstimator, func_file: Path, line_num: int, _func_signature: str
+        self,
+        estimator: ComplexityEstimator,
+        func_file: Path,
+        line_num: int,
+        _func_signature: str,
     ) -> Tuple[Optional[float], Optional[float], Optional[float]]:
         """Estimate complexity for a single function
 

@@ -1,40 +1,52 @@
-# pytest-coverage-impact
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/hero-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="assets/hero-light.png">
+  <img alt="Stellar Engineering Command Banner" src="assets/hero-light.png" width="100%">
+</picture>
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/noah-goodrich/pytest-coverage-impact/main/assets/logo.png" width="300" alt="Pytest Coverage Impact Logo">
-</p>
+![PyPI](https://img.shields.io/pypi/v/pytest-coverage-impact?color=C41E3A&labelColor=333333)
+![Build Status](https://img.shields.io/github/actions/workflow/status/noah-goodrich/pytest-coverage-impact/ci.yml?branch=main&color=007BFF&labelColor=333333&label=Build%20Status)
+![Python Versions](https://img.shields.io/pypi/pyversions/pytest-coverage-impact?color=F9A602&labelColor=333333)
+![License](https://img.shields.io/github/license/noah-goodrich/pytest-coverage-impact?color=F9A602&labelColor=333333)
 
-ML-powered test coverage analysis plugin for pytest that identifies high-impact, low-complexity areas to test first.
+![PyPI](https://img.shields.io/pypi/v/pytest-coverage-impact?color=C41E3A&labelColor=333333)
+![Build Status](https://img.shields.io/github/actions/workflow/status/noah-goodrich/pytest-coverage-impact/ci.yml?branch=main&color=007BFF&labelColor=333333&label=Build%20Status)
+![Python Versions](https://img.shields.io/pypi/pyversions/pytest-coverage-impact?color=F9A602&labelColor=333333)
+![License](https://img.shields.io/github/license/noah-goodrich/pytest-coverage-impact?color=F9A602&labelColor=333333)
+
+Captain's Log: ML-powered **Sensor Telemetry Analysis** module for pytest that identifies high-impact, low-complexity areas to test first.
+
+Scanning the planetary surface (codebase) to determine sensor coverage (test coverage) and identify critical impact zones for the fleet.
 
 ## Features
 
 - **Coverage Impact Analysis**: Builds call graphs to identify high-impact functions
 - **ML Complexity Estimation**: Predicts test complexity with confidence intervals
 - **Prioritization**: Suggests what to test first based on impact and complexity
-- **Works Out of the Box**: Includes pre-trained model, no configuration required
-- **Fast Performance**: Optimized for speed (analyzes 1700+ functions in ~1.5 seconds)
-- **Real-time Progress**: Visual progress bars and step-by-step timing
+- **Refitted Out of the Box**: Includes pre-trained model, no console calibration required
+- **Warp Speed Performance**: Optimized for speed (analyzes 1700+ functions in ~1.5 seconds)
+- **Real-time Telemetry**: Visual progress bars and step-by-step timing
 
-## Installation
+## Docking Procedures
 
 ```bash
 pip install pytest-coverage-impact
 ```
 
-## Quick Start
+## Flight Manual
 
 ```bash
-# Run coverage impact analysis (--cov-report=json automatically added)
+# Run sensor telemetry analysis (--cov-report=json automatically added)
 pytest --cov=your_project --coverage-impact
 
 # Show top 10 functions by priority
 pytest --cov=your_project --coverage-impact --coverage-impact-top=10
 
-# Generate JSON report
+# Generate Telemetry Data (JSON report)
 pytest --cov=your_project --coverage-impact --coverage-impact-json=report.json
 ```
 
-## Example Output
+### Example Telemetry Output
 
 ```
 Top Functions by Priority (Impact / Complexity)
@@ -50,14 +62,14 @@ Top Functions by Priority (Impact / Complexity)
 2. **Impact Calculation**: `impact = call_frequency × (1 - coverage_pct)`
 3. **Complexity Estimation**: Uses Random Forest ML model (0-1 scale)
 4. **Prioritization**: `priority = (impact × confidence) / (complexity × effort)`
-5. **Reporting**: Generates formatted reports showing what to test first
+5. **Reporting**: Generates formatted sensor reports showing what to test first
 
 ## Model Training (Optional)
 
-Plugin includes pre-trained model - no training required. To customize:
+Module includes pre-trained model - no training required. To recalibrate:
 
 ```bash
-# Combined command - collects data and trains model
+# Combined command - collects telemetry and recalibrates model
 pytest --coverage-impact-train
 ```
 
@@ -72,16 +84,19 @@ See [docs/TRAINING_COMMANDS.md](docs/TRAINING_COMMANDS.md) for details.
 - numpy 1.20+
 - rich 13.0+ (terminal formatting)
 
+## Mission Log
+
+- **[CHANGELOG.md](CHANGELOG.md)** - Mission history and sector updates
+
 ## Documentation
 
-- **[docs/USAGE.md](docs/USAGE.md)** - Complete usage guide with examples
-- **[docs/CONFIGURATION.md](docs/CONFIGURATION.md)** - Configure plugin settings and model paths
-- **[docs/TRAINING_COMMANDS.md](docs/TRAINING_COMMANDS.md)** - Train custom ML models
-- **[docs/FORMULA_EXPLANATION.md](docs/FORMULA_EXPLANATION.md)** - How scores are calculated
+- **[docs/USAGE.md](docs/USAGE.md)** - Complete Flight Manual with examples
+- **[docs/CONFIGURATION.md](docs/CONFIGURATION.md)** - Console Calibration settings and model paths
+- **[docs/TRAINING_COMMANDS.md](docs/TRAINING_COMMANDS.md)** - Recalibrate custom ML models
+- **[docs/FORMULA_EXPLANATION.md](docs/FORMULA_EXPLANATION.md)** - How telemetry scores are calculated
 - **[docs/CONFIDENCE_AND_PRIORITY.md](docs/CONFIDENCE_AND_PRIORITY.md)** - How confidence affects prioritization
-- **[docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)** - Releasing and publishing to PyPI
-- **[docs/PERFORMANCE.md](docs/PERFORMANCE.md)** - Performance optimizations explained
-- **[CHANGELOG.md](CHANGELOG.md)** - Version history
+- **[docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)** - Launch procedures and publishing to sector PyPI
+- **[docs/PERFORMANCE.md](docs/PERFORMANCE.md)** - Warp speed optimizations explained
 
 ## Development
 

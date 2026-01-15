@@ -65,16 +65,46 @@ def test_complexity_model_predict():
 
     # Train with sufficient data for CV
     training_data = [
-        {"features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0}, "complexity_label": 0.3},
-        {"features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0}, "complexity_label": 0.7},
-        {"features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0}, "complexity_label": 0.5},
-        {"features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0}, "complexity_label": 0.4},
-        {"features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0}, "complexity_label": 0.6},
-        {"features": {"lines_of_code": 60.0, "cyclomatic_complexity": 6.0}, "complexity_label": 0.8},
-        {"features": {"lines_of_code": 70.0, "cyclomatic_complexity": 7.0}, "complexity_label": 0.9},
-        {"features": {"lines_of_code": 80.0, "cyclomatic_complexity": 8.0}, "complexity_label": 0.2},
-        {"features": {"lines_of_code": 90.0, "cyclomatic_complexity": 9.0}, "complexity_label": 0.1},
-        {"features": {"lines_of_code": 11.0, "cyclomatic_complexity": 1.1}, "complexity_label": 0.3},
+        {
+            "features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0},
+            "complexity_label": 0.3,
+        },
+        {
+            "features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0},
+            "complexity_label": 0.7,
+        },
+        {
+            "features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0},
+            "complexity_label": 0.5,
+        },
+        {
+            "features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0},
+            "complexity_label": 0.4,
+        },
+        {
+            "features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0},
+            "complexity_label": 0.6,
+        },
+        {
+            "features": {"lines_of_code": 60.0, "cyclomatic_complexity": 6.0},
+            "complexity_label": 0.8,
+        },
+        {
+            "features": {"lines_of_code": 70.0, "cyclomatic_complexity": 7.0},
+            "complexity_label": 0.9,
+        },
+        {
+            "features": {"lines_of_code": 80.0, "cyclomatic_complexity": 8.0},
+            "complexity_label": 0.2,
+        },
+        {
+            "features": {"lines_of_code": 90.0, "cyclomatic_complexity": 9.0},
+            "complexity_label": 0.1,
+        },
+        {
+            "features": {"lines_of_code": 11.0, "cyclomatic_complexity": 1.1},
+            "complexity_label": 0.3,
+        },
     ]
 
     model.train(training_data)
@@ -95,16 +125,46 @@ def test_complexity_model_predict_missing_features():
     model = ComplexityModel(n_estimators=10, random_state=42)
 
     training_data = [
-        {"features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0}, "complexity_label": 0.3},
-        {"features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0}, "complexity_label": 0.4},
-        {"features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0}, "complexity_label": 0.5},
-        {"features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0}, "complexity_label": 0.6},
-        {"features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0}, "complexity_label": 0.7},
-        {"features": {"lines_of_code": 60.0, "cyclomatic_complexity": 6.0}, "complexity_label": 0.8},
-        {"features": {"lines_of_code": 70.0, "cyclomatic_complexity": 7.0}, "complexity_label": 0.9},
-        {"features": {"lines_of_code": 80.0, "cyclomatic_complexity": 8.0}, "complexity_label": 0.2},
-        {"features": {"lines_of_code": 90.0, "cyclomatic_complexity": 9.0}, "complexity_label": 0.1},
-        {"features": {"lines_of_code": 11.0, "cyclomatic_complexity": 1.1}, "complexity_label": 0.3},
+        {
+            "features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0},
+            "complexity_label": 0.3,
+        },
+        {
+            "features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0},
+            "complexity_label": 0.4,
+        },
+        {
+            "features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0},
+            "complexity_label": 0.5,
+        },
+        {
+            "features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0},
+            "complexity_label": 0.6,
+        },
+        {
+            "features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0},
+            "complexity_label": 0.7,
+        },
+        {
+            "features": {"lines_of_code": 60.0, "cyclomatic_complexity": 6.0},
+            "complexity_label": 0.8,
+        },
+        {
+            "features": {"lines_of_code": 70.0, "cyclomatic_complexity": 7.0},
+            "complexity_label": 0.9,
+        },
+        {
+            "features": {"lines_of_code": 80.0, "cyclomatic_complexity": 8.0},
+            "complexity_label": 0.2,
+        },
+        {
+            "features": {"lines_of_code": 90.0, "cyclomatic_complexity": 9.0},
+            "complexity_label": 0.1,
+        },
+        {
+            "features": {"lines_of_code": 11.0, "cyclomatic_complexity": 1.1},
+            "complexity_label": 0.3,
+        },
     ]
 
     model.train(training_data)
@@ -125,16 +185,46 @@ def test_complexity_model_predict_with_confidence():
     model = ComplexityModel(n_estimators=10, random_state=42)
 
     training_data = [
-        {"features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0}, "complexity_label": 0.3},
-        {"features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0}, "complexity_label": 0.7},
-        {"features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0}, "complexity_label": 0.5},
-        {"features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0}, "complexity_label": 0.4},
-        {"features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0}, "complexity_label": 0.6},
-        {"features": {"lines_of_code": 60.0, "cyclomatic_complexity": 6.0}, "complexity_label": 0.8},
-        {"features": {"lines_of_code": 70.0, "cyclomatic_complexity": 7.0}, "complexity_label": 0.9},
-        {"features": {"lines_of_code": 80.0, "cyclomatic_complexity": 8.0}, "complexity_label": 0.2},
-        {"features": {"lines_of_code": 90.0, "cyclomatic_complexity": 9.0}, "complexity_label": 0.1},
-        {"features": {"lines_of_code": 11.0, "cyclomatic_complexity": 1.1}, "complexity_label": 0.3},
+        {
+            "features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0},
+            "complexity_label": 0.3,
+        },
+        {
+            "features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0},
+            "complexity_label": 0.7,
+        },
+        {
+            "features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0},
+            "complexity_label": 0.5,
+        },
+        {
+            "features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0},
+            "complexity_label": 0.4,
+        },
+        {
+            "features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0},
+            "complexity_label": 0.6,
+        },
+        {
+            "features": {"lines_of_code": 60.0, "cyclomatic_complexity": 6.0},
+            "complexity_label": 0.8,
+        },
+        {
+            "features": {"lines_of_code": 70.0, "cyclomatic_complexity": 7.0},
+            "complexity_label": 0.9,
+        },
+        {
+            "features": {"lines_of_code": 80.0, "cyclomatic_complexity": 8.0},
+            "complexity_label": 0.2,
+        },
+        {
+            "features": {"lines_of_code": 90.0, "cyclomatic_complexity": 9.0},
+            "complexity_label": 0.1,
+        },
+        {
+            "features": {"lines_of_code": 11.0, "cyclomatic_complexity": 1.1},
+            "complexity_label": 0.3,
+        },
     ]
 
     model.train(training_data)
@@ -173,16 +263,46 @@ def test_complexity_model_get_feature_importance():
     model = ComplexityModel(n_estimators=10, random_state=42)
 
     training_data = [
-        {"features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0}, "complexity_label": 0.3},
-        {"features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0}, "complexity_label": 0.7},
-        {"features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0}, "complexity_label": 0.5},
-        {"features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0}, "complexity_label": 0.4},
-        {"features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0}, "complexity_label": 0.6},
-        {"features": {"lines_of_code": 60.0, "cyclomatic_complexity": 6.0}, "complexity_label": 0.8},
-        {"features": {"lines_of_code": 70.0, "cyclomatic_complexity": 7.0}, "complexity_label": 0.9},
-        {"features": {"lines_of_code": 80.0, "cyclomatic_complexity": 8.0}, "complexity_label": 0.2},
-        {"features": {"lines_of_code": 90.0, "cyclomatic_complexity": 9.0}, "complexity_label": 0.1},
-        {"features": {"lines_of_code": 11.0, "cyclomatic_complexity": 1.1}, "complexity_label": 0.3},
+        {
+            "features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0},
+            "complexity_label": 0.3,
+        },
+        {
+            "features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0},
+            "complexity_label": 0.7,
+        },
+        {
+            "features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0},
+            "complexity_label": 0.5,
+        },
+        {
+            "features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0},
+            "complexity_label": 0.4,
+        },
+        {
+            "features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0},
+            "complexity_label": 0.6,
+        },
+        {
+            "features": {"lines_of_code": 60.0, "cyclomatic_complexity": 6.0},
+            "complexity_label": 0.8,
+        },
+        {
+            "features": {"lines_of_code": 70.0, "cyclomatic_complexity": 7.0},
+            "complexity_label": 0.9,
+        },
+        {
+            "features": {"lines_of_code": 80.0, "cyclomatic_complexity": 8.0},
+            "complexity_label": 0.2,
+        },
+        {
+            "features": {"lines_of_code": 90.0, "cyclomatic_complexity": 9.0},
+            "complexity_label": 0.1,
+        },
+        {
+            "features": {"lines_of_code": 11.0, "cyclomatic_complexity": 1.1},
+            "complexity_label": 0.3,
+        },
     ]
 
     model.train(training_data)
@@ -203,16 +323,46 @@ def test_complexity_model_save_and_load():
         # Train and save
         model = ComplexityModel(n_estimators=10, random_state=42)
         training_data = [
-            {"features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0}, "complexity_label": 0.3},
-            {"features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0}, "complexity_label": 0.4},
-            {"features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0}, "complexity_label": 0.5},
-            {"features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0}, "complexity_label": 0.6},
-            {"features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0}, "complexity_label": 0.7},
-            {"features": {"lines_of_code": 60.0, "cyclomatic_complexity": 6.0}, "complexity_label": 0.8},
-            {"features": {"lines_of_code": 70.0, "cyclomatic_complexity": 7.0}, "complexity_label": 0.9},
-            {"features": {"lines_of_code": 80.0, "cyclomatic_complexity": 8.0}, "complexity_label": 0.2},
-            {"features": {"lines_of_code": 90.0, "cyclomatic_complexity": 9.0}, "complexity_label": 0.1},
-            {"features": {"lines_of_code": 11.0, "cyclomatic_complexity": 1.1}, "complexity_label": 0.3},
+            {
+                "features": {"lines_of_code": 10.0, "cyclomatic_complexity": 1.0},
+                "complexity_label": 0.3,
+            },
+            {
+                "features": {"lines_of_code": 20.0, "cyclomatic_complexity": 2.0},
+                "complexity_label": 0.4,
+            },
+            {
+                "features": {"lines_of_code": 30.0, "cyclomatic_complexity": 3.0},
+                "complexity_label": 0.5,
+            },
+            {
+                "features": {"lines_of_code": 40.0, "cyclomatic_complexity": 4.0},
+                "complexity_label": 0.6,
+            },
+            {
+                "features": {"lines_of_code": 50.0, "cyclomatic_complexity": 5.0},
+                "complexity_label": 0.7,
+            },
+            {
+                "features": {"lines_of_code": 60.0, "cyclomatic_complexity": 6.0},
+                "complexity_label": 0.8,
+            },
+            {
+                "features": {"lines_of_code": 70.0, "cyclomatic_complexity": 7.0},
+                "complexity_label": 0.9,
+            },
+            {
+                "features": {"lines_of_code": 80.0, "cyclomatic_complexity": 8.0},
+                "complexity_label": 0.2,
+            },
+            {
+                "features": {"lines_of_code": 90.0, "cyclomatic_complexity": 9.0},
+                "complexity_label": 0.1,
+            },
+            {
+                "features": {"lines_of_code": 11.0, "cyclomatic_complexity": 1.1},
+                "complexity_label": 0.3,
+            },
         ]
 
         model.train(training_data)
@@ -261,7 +411,11 @@ def test_complexity_model_confidence_interval_clamping():
 
     # Need at least 10 samples
     training_data = [
-        {"features": {"lines_of_code": float(i * 10)}, "complexity_label": 0.5 + (i * 0.04)} for i in range(1, 11)
+        {
+            "features": {"lines_of_code": float(i * 10)},
+            "complexity_label": 0.5 + (i * 0.04),
+        }
+        for i in range(1, 11)
     ]
 
     model.train(training_data)

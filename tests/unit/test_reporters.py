@@ -11,11 +11,11 @@ from pytest_coverage_impact.gateways.reporters import JSONReporter, TerminalRepo
 
 def test_terminal_reporter_empty_list():
     """Test terminal reporter with empty impact scores"""
-    # JUSTIFICATION: Suppress output for testing, GC handles close
-    console = Console(file=open("/dev/null", "w", encoding="utf-8"))  # pylint: disable=consider-using-with
-    reporter = TerminalReporter(console)
+    with open("/dev/null", "w", encoding="utf-8") as f:
+        console = Console(file=f)
+        reporter = TerminalReporter(console)
 
-    reporter.generate_report([], top_n=10)
+        reporter.generate_report([], top_n=10)
 
     # Should not raise an exception
     assert True
@@ -23,23 +23,23 @@ def test_terminal_reporter_empty_list():
 
 def test_terminal_reporter_basic():
     """Test terminal reporter with basic data"""
-    # JUSTIFICATION: Suppress output for testing, GC handles close
-    console = Console(file=open("/dev/null", "w", encoding="utf-8"))  # pylint: disable=consider-using-with
-    reporter = TerminalReporter(console)
+    with open("/dev/null", "w", encoding="utf-8") as f:
+        console = Console(file=f)
+        reporter = TerminalReporter(console)
 
-    impact_scores = [
-        {
-            "function": "module.py::func1",
-            "impact": 10.0,
-            "impact_score": 10.0,
-            "priority": 5.5,
-            "complexity_score": 0.5,
-            "coverage_percentage": 0.3,
-            "file": "module.py",
-        },
-    ]
+        impact_scores = [
+            {
+                "function": "module.py::func1",
+                "impact": 10.0,
+                "impact_score": 10.0,
+                "priority": 5.5,
+                "complexity_score": 0.5,
+                "coverage_percentage": 0.3,
+                "file": "module.py",
+            },
+        ]
 
-    reporter.generate_report(impact_scores, top_n=10)
+        reporter.generate_report(impact_scores, top_n=10)
 
     # Should not raise an exception
     assert True
@@ -47,24 +47,24 @@ def test_terminal_reporter_basic():
 
 def test_terminal_reporter_with_confidence():
     """Test terminal reporter with confidence intervals"""
-    # JUSTIFICATION: Suppress output for testing, GC handles close
-    console = Console(file=open("/dev/null", "w", encoding="utf-8"))  # pylint: disable=consider-using-with
-    reporter = TerminalReporter(console)
+    with open("/dev/null", "w", encoding="utf-8") as f:
+        console = Console(file=f)
+        reporter = TerminalReporter(console)
 
-    impact_scores = [
-        {
-            "function": "module.py::func1",
-            "impact": 10.0,
-            "impact_score": 10.0,
-            "priority": 5.5,
-            "complexity_score": 0.5,
-            "confidence": 0.8,
-            "coverage_percentage": 0.3,
-            "file": "module.py",
-        },
-    ]
+        impact_scores = [
+            {
+                "function": "module.py::func1",
+                "impact": 10.0,
+                "impact_score": 10.0,
+                "priority": 5.5,
+                "complexity_score": 0.5,
+                "confidence": 0.8,
+                "coverage_percentage": 0.3,
+                "file": "module.py",
+            },
+        ]
 
-    reporter.generate_report(impact_scores, top_n=10)
+        reporter.generate_report(impact_scores, top_n=10)
 
     # Should not raise an exception
     assert True
@@ -72,24 +72,24 @@ def test_terminal_reporter_with_confidence():
 
 def test_terminal_reporter_top_n_limit():
     """Test terminal reporter limits to top_n"""
-    # JUSTIFICATION: Suppress output for testing, GC handles close
-    console = Console(file=open("/dev/null", "w", encoding="utf-8"))  # pylint: disable=consider-using-with
-    reporter = TerminalReporter(console)
+    with open("/dev/null", "w", encoding="utf-8") as f:
+        console = Console(file=f)
+        reporter = TerminalReporter(console)
 
-    impact_scores = [
-        {
-            "function": f"module.py::func{i}",
-            "impact": float(i),
-            "impact_score": float(i),
-            "priority": float(i),
-            "complexity_score": 0.5,
-            "coverage_percentage": 0.3,
-            "file": "module.py",
-        }
-        for i in range(20)
-    ]
+        impact_scores = [
+            {
+                "function": f"module.py::func{i}",
+                "impact": float(i),
+                "impact_score": float(i),
+                "priority": float(i),
+                "complexity_score": 0.5,
+                "coverage_percentage": 0.3,
+                "file": "module.py",
+            }
+            for i in range(20)
+        ]
 
-    reporter.generate_report(impact_scores, top_n=5)
+        reporter.generate_report(impact_scores, top_n=5)
 
     # Should not raise an exception
     assert True
@@ -97,24 +97,24 @@ def test_terminal_reporter_top_n_limit():
 
 def test_terminal_reporter_long_file_path():
     """Test terminal reporter with long file paths (truncation)"""
-    # JUSTIFICATION: Suppress output for testing, GC handles close
-    console = Console(file=open("/dev/null", "w", encoding="utf-8"))  # pylint: disable=consider-using-with
-    reporter = TerminalReporter(console)
+    with open("/dev/null", "w", encoding="utf-8") as f:
+        console = Console(file=f)
+        reporter = TerminalReporter(console)
 
-    long_path = "/very/long/path/to/the/module/file/that/exceeds/limit.py"
-    impact_scores = [
-        {
-            "function": f"{long_path}::func1",
-            "impact": 10.0,
-            "impact_score": 10.0,
-            "priority": 5.5,
-            "complexity_score": 0.5,
-            "coverage_percentage": 0.3,
-            "file": long_path,
-        },
-    ]
+        long_path = "/very/long/path/to/the/module/file/that/exceeds/limit.py"
+        impact_scores = [
+            {
+                "function": f"{long_path}::func1",
+                "impact": 10.0,
+                "impact_score": 10.0,
+                "priority": 5.5,
+                "complexity_score": 0.5,
+                "coverage_percentage": 0.3,
+                "file": long_path,
+            },
+        ]
 
-    reporter.generate_report(impact_scores, top_n=10)
+        reporter.generate_report(impact_scores, top_n=10)
 
     # Should not raise an exception
     assert True
@@ -122,24 +122,24 @@ def test_terminal_reporter_long_file_path():
 
 def test_terminal_reporter_long_function_name():
     """Test terminal reporter with long function names (truncation)"""
-    # JUSTIFICATION: Suppress output for testing, GC handles close
-    console = Console(file=open("/dev/null", "w", encoding="utf-8"))  # pylint: disable=consider-using-with
-    reporter = TerminalReporter(console)
+    with open("/dev/null", "w", encoding="utf-8") as f:
+        console = Console(file=f)
+        reporter = TerminalReporter(console)
 
-    long_func = "very_long_function_name_that_exceeds_the_display_limit_should_be_truncated"
-    impact_scores = [
-        {
-            "function": f"module.py::{long_func}",
-            "impact": 10.0,
-            "impact_score": 10.0,
-            "priority": 5.5,
-            "complexity_score": 0.5,
-            "coverage_percentage": 0.3,
-            "file": "module.py",
-        },
-    ]
+        long_func = "very_long_function_name_that_exceeds_the_display_limit_should_be_truncated"
+        impact_scores = [
+            {
+                "function": f"module.py::{long_func}",
+                "impact": 10.0,
+                "impact_score": 10.0,
+                "priority": 5.5,
+                "complexity_score": 0.5,
+                "coverage_percentage": 0.3,
+                "file": "module.py",
+            },
+        ]
 
-    reporter.generate_report(impact_scores, top_n=10)
+        reporter.generate_report(impact_scores, top_n=10)
 
     # Should not raise an exception
     assert True
@@ -147,23 +147,23 @@ def test_terminal_reporter_long_function_name():
 
 def test_terminal_reporter_function_name_with_colons():
     """Test terminal reporter with function names containing ::"""
-    # JUSTIFICATION: Suppress output for testing, GC handles close
-    console = Console(file=open("/dev/null", "w", encoding="utf-8"))  # pylint: disable=consider-using-with
-    reporter = TerminalReporter(console)
+    with open("/dev/null", "w", encoding="utf-8") as f:
+        console = Console(file=f)
+        reporter = TerminalReporter(console)
 
-    impact_scores = [
-        {
-            "function": "module.py::ClassName::method_name",
-            "impact": 10.0,
-            "impact_score": 10.0,
-            "priority": 5.5,
-            "complexity_score": 0.5,
-            "coverage_percentage": 0.3,
-            "file": "module.py",
-        },
-    ]
+        impact_scores = [
+            {
+                "function": "module.py::ClassName::method_name",
+                "impact": 10.0,
+                "impact_score": 10.0,
+                "priority": 5.5,
+                "complexity_score": 0.5,
+                "coverage_percentage": 0.3,
+                "file": "module.py",
+            },
+        ]
 
-    reporter.generate_report(impact_scores, top_n=10)
+        reporter.generate_report(impact_scores, top_n=10)
 
     # Should not raise an exception
     assert True
@@ -171,22 +171,22 @@ def test_terminal_reporter_function_name_with_colons():
 
 def test_terminal_reporter_missing_coverage_percentage():
     """Test terminal reporter handles missing coverage_percentage"""
-    # JUSTIFICATION: Suppress output for testing, GC handles close
-    console = Console(file=open("/dev/null", "w", encoding="utf-8"))  # pylint: disable=consider-using-with
-    reporter = TerminalReporter(console)
+    with open("/dev/null", "w", encoding="utf-8") as f:
+        console = Console(file=f)
+        reporter = TerminalReporter(console)
 
-    impact_scores = [
-        {
-            "function": "module.py::func1",
-            "impact": 10.0,
-            "impact_score": 10.0,
-            "priority": 5.5,
-            "complexity_score": 0.5,
-            "file": "module.py",
-        },
-    ]
+        impact_scores = [
+            {
+                "function": "module.py::func1",
+                "impact": 10.0,
+                "impact_score": 10.0,
+                "priority": 5.5,
+                "complexity_score": 0.5,
+                "file": "module.py",
+            },
+        ]
 
-    reporter.generate_report(impact_scores, top_n=10)
+        reporter.generate_report(impact_scores, top_n=10)
 
     # Should not raise an exception
     assert True

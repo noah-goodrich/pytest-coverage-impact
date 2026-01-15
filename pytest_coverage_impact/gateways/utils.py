@@ -23,7 +23,10 @@ def resolve_path(path: Path, project_root: Path) -> Path:
 
 
 def resolve_model_path_with_auto_detect(
-    path_str: str, project_root: Path, prefix: str = "complexity_model_v", suffix: str = ".pkl"
+    path_str: str,
+    project_root: Path,
+    prefix: str = "complexity_model_v",
+    suffix: str = ".pkl",
 ) -> Optional[Path]:
     """Resolve model path from string with automatic version detection for directories
 

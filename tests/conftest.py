@@ -26,7 +26,11 @@ def temp_project():
                     {
                         "files": {
                             "src/main.py": {
-                                "summary": {"num_statements": 1, "covered_lines": 1, "missing_lines": 0},
+                                "summary": {
+                                    "num_statements": 1,
+                                    "covered_lines": 1,
+                                    "missing_lines": 0,
+                                },
                                 "executed_lines": [1],
                                 "missing_lines": [],
                             }

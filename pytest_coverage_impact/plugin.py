@@ -12,6 +12,7 @@ from pytest_coverage_impact.core.config import get_model_path
 from pytest_coverage_impact.ml.gateway import MLGateway
 from pytest_coverage_impact.gateways.progress import ProgressMonitor
 from pytest_coverage_impact.gateways.reporters import TerminalReporter, JSONReporter
+from pytest_coverage_impact.ui import SystemUI
 
 
 def pytest_load_initial_conftests(args):
@@ -161,6 +162,11 @@ def pytest_configure(config: pytest.Config) -> None:
         sys.exit(0)
 
 
+def pytest_sessionstart(session: pytest.Session) -> None:
+    """Stellar Handshake: Sensoria Calibration"""
+    SystemUI.announce_initialization(session.config)
+
+
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     """Generate coverage impact report after test session"""
     config = session.config
@@ -173,9 +179,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         return
 
     try:
-        console = Console()
-        console.print("\n[bold blue]Coverage Impact Analysis[/bold blue]")
-        console.print("=" * 60)
+        SystemUI.announce_section("Coverage Impact Analysis")
 
         # Determine project root
         project_root = Path(config.rootdir)
@@ -183,7 +187,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         # Check if we have coverage data
         coverage_file = project_root / "coverage.json"
         if not coverage_file.exists():
-            console.print("[yellow]⚠ Warning: coverage.json not found. Run pytest with --cov first.[/yellow]")
+            SystemUI.announce_warning("coverage.json not found. Run pytest with --cov first.")
             return
 
         # Create analyzer and get model path
@@ -197,13 +201,14 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
             # Fallback to config system
             model_path = get_model_path(config, project_root)
 
-        _run_analysis(analyzer, coverage_file, model_path, console, config)
+        _run_analysis(analyzer, coverage_file, model_path, config)
 
     # JUSTIFICATION: Top-level entry point must catch all exceptions to prevent crash dump
     except Exception as e:  # pylint: disable=broad-exception-caught
-        console_instance = Console()
-        console_instance.print(f"\n[red]✗ Error generating coverage impact report: {e}[/red]")
-        console_instance.print(f"[dim]{traceback.format_exc()}[/dim]")
+        # JUSTIFICATION: Report generation should not crash the test session
+        SystemUI.announce_error(f"generating coverage impact report: {e}")
+        # Print full traceback for debugging if verbose
+        SystemUI.announce_error(f"[dim]{traceback.format_exc()}[/dim]")
 
 
 def _collect_training_data(gateway, collect_path):
@@ -221,11 +226,14 @@ def _train_combined(gateway):
     gateway.handle_train()
 
 
-def _run_analysis(analyzer, coverage_file, model_path, console, config):
+def _run_analysis(analyzer, coverage_file, model_path, config):
     """Run the analysis steps"""
+    # Create console for progress monitor
+    console = Console()
+
     # Create progress monitor for analysis
     with ProgressMonitor(console, enabled=True) as progress:
-        console.print("[dim]Analyzing coverage impact...[/dim]")
+        SystemUI.announce_progress("Analyzing coverage impact...")
 
         # Perform analysis with model path and progress monitor
         results = analyzer.analyze(coverage_file, model_path=model_path, progress_monitor=progress)
@@ -235,17 +243,17 @@ def _run_analysis(analyzer, coverage_file, model_path, console, config):
         complexity_scores = results.get("complexity_scores", {})
         prioritized = results["prioritized"]
 
-        console.print(f"[green]✓[/green] Found {len(call_graph.graph)} functions")
-        console.print(f"[green]✓[/green] Calculated scores for {len(impact_scores)} functions")
+        SystemUI.announce_success(f"Found {len(call_graph.graph)} functions")
+        SystemUI.announce_success(f"Calculated scores for {len(impact_scores)} functions")
 
         if complexity_scores:
-            console.print(f"[green]✓[/green] Estimated complexity for {len(complexity_scores)} functions")
+            SystemUI.announce_success(f"Estimated complexity for {len(complexity_scores)} functions")
 
-        console.print(f"[green]✓[/green] Prioritized {len(prioritized)} functions")
+        SystemUI.announce_success(f"Prioritized {len(prioritized)} functions")
 
     _generate_terminal_report(console, config, results, prioritized)
-    _generate_json_report(console, config, impact_scores)
-    _check_html_report(console, config)
+    _generate_json_report(config, impact_scores)
+    _check_html_report(config)
 
 
 def _resolve_model_path(analyzer, cli_model_path):
@@ -256,7 +264,12 @@ def _resolve_model_path(analyzer, cli_model_path):
 def _run_terminal_reporter(reporter, results, prioritized, top_n):
     """Helper to run terminal reporter"""
     reporter.print_timings(results.get("timings", {}))
-    reporter.generate_report(prioritized, top_n=top_n, totals=results.get("totals"), files=results.get("files"))
+    reporter.generate_report(
+        prioritized,
+        top_n=top_n,
+        totals=results.get("totals"),
+        files=results.get("files"),
+    )
 
 
 def _run_json_reporter(json_reporter, impact_scores, json_path):
@@ -272,17 +285,17 @@ def _generate_terminal_report(console, config, results, prioritized):
     _run_terminal_reporter(reporter, results, prioritized, top_n)
 
 
-def _generate_json_report(console, config, impact_scores):
+def _generate_json_report(config, impact_scores):
     """Generate and save the JSON report if requested"""
     json_path = config.getoption("--coverage-impact-json")
     if json_path:
         json_reporter = JSONReporter()
         _run_json_reporter(json_reporter, impact_scores, json_path)
-        console.print(f"\n[green]✓[/green] JSON report saved to {json_path}")
+        SystemUI.announce_success(f"JSON report saved to {json_path}")
 
 
-def _check_html_report(console, config):
+def _check_html_report(config):
     """Check and notify about HTML report status"""
     html_path = config.getoption("--coverage-impact-html")
     if html_path:
-        console.print("\n[yellow]⚠ HTML reports coming soon[/yellow]")
+        SystemUI.announce_warning("HTML reports coming soon")

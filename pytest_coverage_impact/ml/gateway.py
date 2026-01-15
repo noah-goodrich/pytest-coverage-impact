@@ -12,7 +12,10 @@ from rich.console import Console
 from pytest_coverage_impact.ml.complexity_model import ComplexityModel
 from pytest_coverage_impact.ml.training_data_collector import TrainingDataCollector
 from pytest_coverage_impact.ml.versioning import get_next_version
-from pytest_coverage_impact.gateways.utils import resolve_path, ensure_parent_directory_exists
+from pytest_coverage_impact.gateways.utils import (
+    resolve_path,
+    ensure_parent_directory_exists,
+)
 
 
 class MLGateway:

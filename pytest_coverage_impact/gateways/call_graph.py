@@ -121,7 +121,11 @@ class CallGraph:
         return matches
 
     def _update_calls_for_caller(
-        self, caller_name: str, caller_data: Dict, calls_to_add: List[str], calls_to_remove: List[str]
+        self,
+        caller_name: str,
+        caller_data: Dict,
+        calls_to_add: List[str],
+        calls_to_remove: List[str],
     ) -> None:
         """Update call graph for a caller with resolved method calls
 
@@ -178,7 +182,9 @@ class CallGraph:
             if progress_monitor and task_id:
                 if (idx + 1) % 100 == 0 or idx == len(self.graph) - 1:
                     progress_monitor.update(
-                        task_id, advance=1, description=f"[yellow]Resolving method calls: {idx + 1}/{total_callers}"
+                        task_id,
+                        advance=1,
+                        description=f"[yellow]Resolving method calls: {idx + 1}/{total_callers}",
                     )
 
         if progress_monitor and task_id:

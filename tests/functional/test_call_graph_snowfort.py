@@ -7,7 +7,10 @@ They should be excluded from normal unit/integration test runs.
 from pathlib import Path
 
 from pytest_coverage_impact.gateways.call_graph import build_call_graph
-from pytest_coverage_impact.core.impact_calculator import ImpactCalculator, load_coverage_data
+from pytest_coverage_impact.core.impact_calculator import (
+    ImpactCalculator,
+    load_coverage_data,
+)
 
 
 def test_build_call_graph_on_snowfort():

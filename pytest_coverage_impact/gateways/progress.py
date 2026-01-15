@@ -66,7 +66,12 @@ class ProgressMonitor:
             return None
         return self.progress.add_task(description, total=total)
 
-    def update(self, task_id: Optional[TaskID], advance: int = 1, description: Optional[str] = None):
+    def update(
+        self,
+        task_id: Optional[TaskID],
+        advance: int = 1,
+        description: Optional[str] = None,
+    ):
         """Update progress for a task
 
         Args:

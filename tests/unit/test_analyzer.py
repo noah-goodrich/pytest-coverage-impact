@@ -181,7 +181,11 @@ def test_estimate_function_complexity_file_not_found(temp_project):
     coverage_data = {
         "files": {
             "src/nonexistent.py": {  # File doesn't exist on disk
-                "summary": {"covered_lines": 0, "num_statements": 0, "percent_covered": 0.0},
+                "summary": {
+                    "covered_lines": 0,
+                    "num_statements": 0,
+                    "percent_covered": 0.0,
+                },
                 "executed_lines": [],
                 "missing_lines": [],
             }

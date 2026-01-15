@@ -14,7 +14,11 @@ class TerminalReporter:
         self.console = console or Console()
 
     def generate_report(
-        self, impact_scores: List[Dict], top_n: int = 20, totals: Optional[Dict] = None, files: Optional[Dict] = None
+        self,
+        impact_scores: List[Dict],
+        top_n: int = 20,
+        totals: Optional[Dict] = None,
+        files: Optional[Dict] = None,
     ) -> None:
         """Generate terminal report
 
@@ -31,7 +35,7 @@ class TerminalReporter:
             self._print_package_coverage(files)
 
         if not impact_scores:
-            self.console.print("[yellow]No functions found for analysis[/yellow]")
+            self.console.print("[bold #C41E3A]No functions found for analysis[/bold #C41E3A]")
             return
 
         self._print_impact_scores(impact_scores, top_n)
@@ -45,10 +49,10 @@ class TerminalReporter:
         if not timings:
             return
 
-        timing_table = Table(title="Performance Summary", show_header=True, header_style="bold magenta")
-        timing_table.add_column("Step", style="cyan", no_wrap=True)
-        timing_table.add_column("Time", justify="right", style="green")
-        timing_table.add_column("Percentage", justify="right", style="yellow")
+        timing_table = Table(title="Performance Summary", show_header=True, header_style="bold #007BFF")
+        timing_table.add_column("Step", style="#00EEFF", no_wrap=True)
+        timing_table.add_column("Time", justify="right", style="#F9A602")
+        timing_table.add_column("Percentage", justify="right", style="#007BFF")
 
         total = timings.get("total", 0)
         step_names = {
@@ -68,15 +72,24 @@ class TerminalReporter:
 
         if total > 0:
             self._add_table_section(timing_table)
-            timing_table.add_row("[bold]TOTAL[/bold]", f"[bold]{total:.2f}s[/bold]", "100.0%", style="bold green")
+            timing_table.add_row(
+                "[bold]TOTAL[/bold]",
+                f"[bold]{total:.2f}s[/bold]",
+                "100.0%",
+                style="bold #F9A602",
+            )
             self.console.print("\n")
             self.console.print(timing_table)
 
     def _print_summary(self, totals: Dict) -> None:
         """Print overall coverage summary table."""
-        summary = Table(title="Overall Coverage Summary", show_header=True, header_style="bold green")
-        summary.add_column("Metric", style="cyan")
-        summary.add_column("Value", justify="right", style="magenta")
+        summary = Table(
+            title="Overall Coverage Summary",
+            show_header=True,
+            header_style="bold #F9A602",
+        )
+        summary.add_column("Metric", style="#007BFF")
+        summary.add_column("Value", justify="right", style="#F9A602")
 
         cov_pct = totals.get("percent_covered", 0)
         summary.add_row("Total Statements", str(totals.get("num_statements", 0)))
@@ -106,10 +119,14 @@ class TerminalReporter:
             package_cov[package_name]["covered"] += f_summary.get("covered_lines", 0)
 
         if package_cov:
-            pkg_table = Table(title="Package Coverage Summary", show_header=True, header_style="bold cyan")
-            pkg_table.add_column("Package", style="blue")
-            pkg_table.add_column("Coverage", justify="right", style="green")
-            pkg_table.add_column("Stats", justify="right", style="dim")
+            pkg_table = Table(
+                title="Package Coverage Summary",
+                show_header=True,
+                header_style="bold #007BFF",
+            )
+            pkg_table.add_column("Package", style="#007BFF")
+            pkg_table.add_column("Coverage", justify="right", style="#F9A602")
+            pkg_table.add_column("Stats", justify="right", style="dim #00EEFF")
 
             for pkg, stats in sorted(package_cov.items()):
                 if stats["statements"] > 0:
@@ -123,13 +140,13 @@ class TerminalReporter:
         """Print table of top impact functions."""
         # Create table
         table = Table(title="Top Functions by Priority (Impact / Complexity)")
-        table.add_column("Priority", justify="right", style="cyan")
-        table.add_column("Score", justify="right", style="green")
-        table.add_column("Impact", justify="right", style="green")
-        table.add_column("Complexity", justify="right", style="yellow")
-        table.add_column("Coverage %", justify="right", style="yellow")
-        table.add_column("File", style="blue")
-        table.add_column("Function", style="magenta")
+        table.add_column("Priority", justify="right", style="#007BFF")
+        table.add_column("Score", justify="right", style="#F9A602")
+        table.add_column("Impact", justify="right", style="#C41E3A")
+        table.add_column("Complexity", justify="right", style="#F9A602")
+        table.add_column("Coverage %", justify="right", style="#00EEFF")
+        table.add_column("File", style="#007BFF")
+        table.add_column("Function", style="#F9A602")
 
         for i, item in enumerate(impact_scores[:top_n], 1):
             priority = f"{i}"
@@ -157,7 +174,15 @@ class TerminalReporter:
             if len(func_name) > 25:
                 func_name = func_name[:22] + "..."
 
-            table.add_row(priority, priority_score, impact, complexity_str, coverage_pct, file_path, func_name)
+            table.add_row(
+                priority,
+                priority_score,
+                impact,
+                complexity_str,
+                coverage_pct,
+                file_path,
+                func_name,
+            )
 
         self.console.print("\n")
         self.console.print(table)

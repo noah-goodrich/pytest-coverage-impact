@@ -191,7 +191,12 @@ class TrainingDataCollector:
         print(f"Collected {len(training_data)} training examples")
         return training_data
 
-    def save_training_data(self, training_data: List[Dict], output_path: Path, version: Optional[str] = None) -> str:
+    def save_training_data(
+        self,
+        training_data: List[Dict],
+        output_path: Path,
+        version: Optional[str] = None,
+    ) -> str:
         """Save training data to JSON file
 
         Args:

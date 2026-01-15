@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pytest-coverage-impact"
 version = "1.0.1"
-description = "ML-powered test coverage analysis plugin for pytest"
+description = "🔵 Sensoria: High-fidelity coverage impact analysis for Python."
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
-    {name = "Coverage Impact Team"}
+    { name = "Noah Goodrich", email = "goodrich.noah@gmail.com" },
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
