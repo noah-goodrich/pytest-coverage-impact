@@ -1,7 +1,7 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/hero-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="assets/hero-light.png">
-  <img alt="Stellar Engineering Command Banner" src="assets/hero-light.png" width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/noah-goodrich/pytest-coverage-impact/main/assets/hero-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/noah-goodrich/pytest-coverage-impact/main/assets/hero-light.png">
+  <img alt="Stellar Engineering Command Banner" src="https://raw.githubusercontent.com/noah-goodrich/pytest-coverage-impact/main/assets/hero-light.png" width="100%">
 </picture>
 
 ![PyPI](https://img.shields.io/pypi/v/pytest-coverage-impact?color=C41E3A&labelColor=333333)
