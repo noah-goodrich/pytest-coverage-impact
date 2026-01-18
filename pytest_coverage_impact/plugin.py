@@ -1,4 +1,5 @@
 """Pytest plugin for coverage impact analysis."""
+
 import sys
 from pathlib import Path
 
@@ -70,6 +71,14 @@ def _configure_group(group) -> None:
     )
 
     group.addoption(
+        "--coverage-impact-ignore-modules",
+        action="store",
+        default=None,
+        metavar="MODULES",
+        help="Comma-separated list of modules/files to ignore in analysis (e.g. telemetry.py,utils.py)",
+    )
+
+    group.addoption(
         "--coverage-impact-feedback",
         action="store_true",
         default=False,
@@ -134,6 +143,13 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addini(
         "coverage_impact_model_path",
         "Path to ML complexity model file (relative to project root or absolute)",
+        type="string",
+        default=None,
+    )
+
+    parser.addini(
+        "coverage_impact_ignore_modules",
+        "Comma-separated list of modules/files to ignore in analysis",
         type="string",
         default=None,
     )
@@ -250,8 +266,17 @@ def _run_analysis(analyzer, coverage_file, model_path, config):
         if telemetry:
             telemetry.step("Analyzing coverage impact...")
 
+        # Get ignored modules config (CLI > kwarg > default)
+        ignore_str = config.getoption("--coverage-impact-ignore-modules")
+        if not ignore_str:
+            ignore_str = config.getini("coverage_impact_ignore_modules")
+
+        ignored_modules = [m.strip() for m in ignore_str.split(",")] if ignore_str else None
+
         # Perform analysis with model path and progress monitor
-        results = analyzer.analyze(coverage_file, model_path=model_path, progress_monitor=progress)
+        results = analyzer.analyze(
+            coverage_file, model_path=model_path, progress_monitor=progress, ignored_modules=ignored_modules
+        )
 
         call_graph = results["call_graph"]
         impact_scores = results["impact_scores"]

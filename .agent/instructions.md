@@ -43,3 +43,10 @@ Inner layers (Domain, Pytest_coverage_impact (UseCase)) **MUST NOT** import from
 
 To check compliance, run:
 `pylint src/`
+
+## External Dependencies (Fleet Kit)
+
+*   This project utilizes shared components from @[stellar-ui-kit].
+*   **Read-Only**: Any file with a `# FLEET SYNC` header must be treated as READ-ONLY within this package.
+*   **Modifications**: All updates to these components MUST be performed in the kit source, not here.
+*   **Coverage**: These files are excluded from local coverage reports to ensure we only measure project-specific health.

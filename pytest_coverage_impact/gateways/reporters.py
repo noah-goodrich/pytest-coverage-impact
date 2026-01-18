@@ -151,7 +151,7 @@ class TerminalReporter:
         for i, item in enumerate(impact_scores[:top_n], 1):
             priority = f"{i}"
             priority_score = f"{item.get('priority', item.get('impact_score', 0)):.2f}"
-            impact = f"{item['impact']:.1f}"
+            impact = f"{item.get('impact_score_normalized', item['impact']):.1f}"
 
             # Complexity with confidence interval if available
             complexity = item.get("complexity_score", 0.5)

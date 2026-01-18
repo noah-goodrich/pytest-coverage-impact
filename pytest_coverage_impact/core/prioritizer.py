@@ -53,6 +53,16 @@ class Prioritizer:
         """
         prioritized = []
 
+        if not impact_scores:
+            return []
+
+        # Find maximum impact score for normalization
+        max_impact = max(item.get("impact_score", 0) for item in impact_scores)
+        if max_impact == 0:
+            max_impact = 1.0
+
+        prioritized = []
+
         for item in impact_scores:
             func_signature = item["function"]
 
@@ -66,12 +76,16 @@ class Prioritizer:
             if confidence_scores and func_signature in confidence_scores:
                 confidence = confidence_scores[func_signature]
 
+            # Normalize impact score to 0-100 range
+            raw_impact = item["impact_score"]
+            normalized_impact = (raw_impact / max_impact) * 100.0
+
             # Derive effort from complexity (more complex = more effort)
             effort = 1.0 + (complexity * 2.0)  # Effort ranges from 1.0 to 3.0
 
-            # Calculate priority
+            # Calculate priority using normalized impact
             priority = Prioritizer.calculate_priority(
-                impact_score=item["impact_score"],
+                impact_score=normalized_impact,
                 complexity_score=complexity,
                 confidence=confidence,
                 effort_multiplier=effort,
@@ -82,15 +96,13 @@ class Prioritizer:
             result["complexity_score"] = complexity
             result["confidence"] = confidence
             result["priority"] = priority
-
+            result["impact_score_normalized"] = normalized_impact
             prioritized.append(result)
 
         # Sort by priority (highest first), then by impact for tie-breaking
         prioritized.sort(key=lambda x: (x["priority"], x.get("impact", 0)), reverse=True)
 
         # Filter out functions with zero impact (unused functions)
-        # These should be shown separately or filtered out
         prioritized_with_impact = [f for f in prioritized if f.get("impact", 0) > 0]
 
-        # If we have functions with impact, return those; otherwise return all
         return prioritized_with_impact if prioritized_with_impact else prioritized

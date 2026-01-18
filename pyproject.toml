@@ -126,3 +126,10 @@ welcome_msg = "Orbital Sensors Active"
 "pytest_coverage_impact.ml.training_data_collector" = "Infrastructure"
 "pytest_coverage_impact.ml.complexity_model" = "Infrastructure"
 "pytest_coverage_impact.plugin" = "Interface"
+
+[tool.coverage.run]
+source = ["pytest_coverage_impact"]
+omit = [
+    "**/tests/**",
+    "**/telemetry.py",
+]

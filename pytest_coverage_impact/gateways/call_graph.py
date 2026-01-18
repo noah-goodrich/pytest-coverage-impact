@@ -428,19 +428,22 @@ def find_python_files(root: Path, exclude_patterns: Optional[List[str]] = None) 
     return files
 
 
-def build_call_graph(root: Path, package_prefix: Optional[str] = None, progress_monitor=None) -> CallGraph:
+def build_call_graph(
+    root: Path,
+    package_prefix: Optional[str] = None,
+    progress_monitor=None,
+    exclude_patterns: Optional[List[str]] = None,
+) -> CallGraph:
     """Build call graph from codebase AST
 
     Args:
         root: Root directory of the codebase
         package_prefix: Optional package prefix to filter functions (e.g., "snowfort/")
         progress_monitor: Optional progress monitor for showing progress
-
-    Returns:
-        CallGraph object with function relationships
+        exclude_patterns: Optional list of patterns to exclude
     """
     call_graph = CallGraph()
-    files = find_python_files(root)
+    files = find_python_files(root, exclude_patterns=exclude_patterns)
     root_path = Path(root).resolve()
 
     # Create progress task for file parsing

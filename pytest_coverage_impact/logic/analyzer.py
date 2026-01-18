@@ -72,6 +72,7 @@ class CoverageImpactAnalyzer:
         coverage_file: Optional[Path] = None,
         model_path: Optional[Path] = None,
         progress_monitor: Optional[ProgressMonitor] = None,
+        ignored_modules: Optional[List[str]] = None,
     ) -> Dict:
         """Perform full coverage impact analysis"""
         self.telemetry.step("Initializing Analysis: Calculating hull integrity via coverage impact...")
@@ -87,7 +88,9 @@ class CoverageImpactAnalyzer:
         # Build call graph
         step_start = time.time()
         self.telemetry.step("Building Call Graph: Mapping the function lattice...")
-        call_graph = build_call_graph(self.source_dir, progress_monitor=progress_monitor)
+        call_graph = build_call_graph(
+            self.source_dir, progress_monitor=progress_monitor, exclude_patterns=ignored_modules
+        )
         timings["build_call_graph"] = time.time() - step_start
 
         if len(call_graph.graph) == 0:
